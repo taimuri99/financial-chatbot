@@ -1,6 +1,6 @@
 import asyncio
 import httpx
-from .config import FINNHUB_API_KEY
+from src.fin_dashboard.config import FINNHUB_API_KEY
 import streamlit as st
 import logging
 

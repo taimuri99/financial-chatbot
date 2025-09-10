@@ -1,6 +1,6 @@
 import streamlit as st
-from .utils import format_currency
-from .analytics import compute_ratios, summarize_trends
+from src.fin_dashboard.utils import format_currency
+from src.fin_dashboard.analytics import compute_ratios, summarize_trends
 import streamlit as st
 
 def init_streamlit():
