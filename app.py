@@ -19,16 +19,35 @@ from src.fin_dashboard.analytics import compute_ratios, summarize_trends
 init_streamlit()
 
 # ---------------------------
-# Sidebar controls
+# Sidebar controls with session_state fix
 # ---------------------------
 st.sidebar.header("⚙️ Controls")
 example_tickers = ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN"]
-ticker = st.sidebar.selectbox(
-    "Select or enter Stock Ticker:", example_tickers + ["Custom..."]
-)
-if ticker == "Custom...":
-    ticker = st.sidebar.text_input("Enter your ticker:", "AAPL")
 
+# Initialize session_state for ticker
+if "ticker" not in st.session_state:
+    st.session_state["ticker"] = example_tickers[0]
+
+# Selectbox for tickers
+ticker = st.sidebar.selectbox(
+    "Select or enter Stock Ticker:",
+    example_tickers + ["Custom..."],
+    index=example_tickers.index(st.session_state["ticker"])
+)
+
+# Handle custom ticker input
+if ticker == "Custom...":
+    custom_input = st.sidebar.text_input(
+        "Enter your ticker:", value=str(st.session_state.get("ticker", "AAPL"))
+    )
+    if custom_input:
+        ticker = str(custom_input.strip().upper())
+
+st.session_state["ticker"] = ticker
+
+# ---------------------------
+# User Query Input
+# ---------------------------
 user_query = st.text_area(
     "Ask a question about this company:",
     "Summarize financial data and SEC filings.",
@@ -41,12 +60,12 @@ if st.button("🔍 Analyze"):
     output_box = st.empty()
 
     try:
-        output_box.info(f"Fetching data for **{ticker.upper()}** ...")
+        output_box.info(f"Fetching data for **{ticker}** ...")
 
         # 1. Get Data
-        with st.spinner(f"Fetching data for {ticker.upper()} ..."):
-            finnhub_result = get_finnhub_company_data(ticker.upper())
-            sec_result = get_sec_filings(ticker.upper(), count=5)
+        with st.spinner(f"Fetching data for {ticker} ..."):
+            finnhub_result = get_finnhub_company_data(ticker)
+            sec_result = get_sec_filings(ticker, count=5)
 
         finnhub_data = finnhub_result.get("data", {})
         finnhub_errors = finnhub_result.get("errors", [])
@@ -58,14 +77,14 @@ if st.button("🔍 Analyze"):
             st.error(f"{err['source']} API Error: {err['code']} | {err['message']}")
 
         if not finnhub_data:
-            output_box.error(f"❌ Could not fetch Finnhub data for {ticker.upper()}.")
-            log_warning(f"Finnhub data missing for {ticker.upper()}")
+            output_box.error(f"❌ Could not fetch Finnhub data for {ticker}.")
+            log_warning(f"Finnhub data missing for {ticker}")
 
         if not sec_data:
-            st.warning(f"⚠️ No SEC filings found for {ticker.upper()} or SEC API is unreachable.")
-            log_warning(f"SEC filings missing for {ticker.upper()}")
+            st.warning(f"⚠️ No SEC filings found for {ticker} or SEC API is unreachable.")
+            log_warning(f"SEC filings missing for {ticker}")
 
-        # 2. Run Analytics (NEW)
+        # 2. Run Analytics
         with st.spinner("Computing financial ratios and trends..."):
             ratios = compute_ratios(finnhub_data)
             trend_summary = summarize_trends(finnhub_data)
