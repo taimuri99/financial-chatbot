@@ -8,15 +8,10 @@ The app combines Finnhub market data + SEC filings, runs them through LLMs, and 
 /
 ├── README.md
 ├── requirements.txt
-├── .gitignore
 ├── DIRECTORY.md
-├── .streamlit/
-│   └── config.toml
-├── data/
-│   └── chroma/                  # persisted vector DB
+├── main.py              # Streamlit entrypoint
 └── src/
     └── fin_dashboard/
-        ├── main.py              # Streamlit entrypoint
         ├── config.py            # API keys, constants
         ├── ui.py                # layouts, components, charts
         ├── datasources.py       # SEC + Finnhub API fetchers
