@@ -19,7 +19,7 @@ from src.fin_dashboard.analytics import compute_ratios, summarize_trends
 init_streamlit()
 
 # ---------------------------
-# Sidebar controls with session_state fix
+# Sidebar controls with safe session_state handling
 # ---------------------------
 st.sidebar.header("⚙️ Controls")
 example_tickers = ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN"]
@@ -28,17 +28,24 @@ example_tickers = ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN"]
 if "ticker" not in st.session_state:
     st.session_state["ticker"] = example_tickers[0]
 
+# Determine selected index safely
+current_ticker = st.session_state.get("ticker", example_tickers[0])
+if current_ticker in example_tickers:
+    selected_index = example_tickers.index(current_ticker)
+else:
+    selected_index = len(example_tickers)  # points to "Custom..."
+
 # Selectbox for tickers
 ticker = st.sidebar.selectbox(
     "Select or enter Stock Ticker:",
     example_tickers + ["Custom..."],
-    index=example_tickers.index(st.session_state["ticker"])
+    index=selected_index
 )
 
 # Handle custom ticker input
 if ticker == "Custom...":
     custom_input = st.sidebar.text_input(
-        "Enter your ticker:", value=str(st.session_state.get("ticker", "AAPL"))
+        "Enter your ticker:", value=str(current_ticker)
     )
     if custom_input:
         ticker = str(custom_input.strip().upper())
