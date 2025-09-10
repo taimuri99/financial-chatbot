@@ -12,7 +12,7 @@ from src.fin_dashboard.datasources import get_finnhub_company_data, get_sec_fili
 from src.fin_dashboard.retrieval import create_retriever
 from src.fin_dashboard.reports import create_pdf
 from src.fin_dashboard.analytics import compute_ratios, summarize_trends
-from src.fin_dashboard.utils import log_warning  # if you want to log to file as well
+from src.fin_dashboard.datasources import log_warning  # if you want to log to file as well
 
 
 # ---------------------------
