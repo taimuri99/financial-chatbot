@@ -1,7 +1,6 @@
 import asyncio
 import httpx
 from .config import FINNHUB_API_KEY
-from .utils import safe_fetch
 import streamlit as st
 import logging
 
@@ -25,7 +24,7 @@ def log_error(message):
 # Async fetch with retry
 # ------------------------------
 async def fetch_with_retry_async(client, url, headers=None, params=None, retries=3, delay=2, timeout=5):
-    """Async GET requests with retries and return detailed error info."""
+    """Async GET requests with retries and detailed error info."""
     for attempt in range(1, retries + 1):
         try:
             res = await client.get(url, headers=headers, params=params, timeout=timeout)
@@ -36,16 +35,13 @@ async def fetch_with_retry_async(client, url, headers=None, params=None, retries
                 return {"success": False, "code": 404, "message": "Not Found"}
             elif res.status_code == 429:
                 log_error(f"API 429 Rate Limit | URL: {url} | Attempt {attempt}")
-                await asyncio.sleep(delay)
             elif 500 <= res.status_code < 600:
                 log_error(f"API {res.status_code} Server Error | URL: {url} | Attempt {attempt}")
-                await asyncio.sleep(delay)
             else:
                 log_warning(f"API {res.status_code} Unexpected Response | URL: {url} | Attempt {attempt}")
-                await asyncio.sleep(delay)
         except httpx.RequestError as e:
             log_error(f"Request exception: {e} | URL: {url} | Attempt {attempt}")
-            await asyncio.sleep(delay)
+        await asyncio.sleep(delay)
     log_error(f"All retries failed for API URL: {url}")
     return {"success": False, "code": "RETRIES_EXCEEDED", "message": f"All retries failed for {url}"}
 
@@ -60,6 +56,7 @@ async def _fetch_finnhub(symbol: str):
             "quote": f"{base_url}/quote",
             "metrics": f"{base_url}/stock/metric"
         }
+
         params_profile = {"symbol": symbol, "token": FINNHUB_API_KEY}
         params_quote = {"symbol": symbol, "token": FINNHUB_API_KEY}
         params_metrics = {"symbol": symbol, "metric": "all", "token": FINNHUB_API_KEY}
@@ -99,10 +96,10 @@ async def _fetch_finnhub(symbol: str):
 def get_finnhub_company_data(symbol: str):
     """Wrapper to safely run async fetch in Streamlit."""
     try:
-        return asyncio.run(_fetch_finnhub(symbol))
+        return asyncio.get_running_loop().run_until_complete(_fetch_finnhub(symbol))
     except RuntimeError:
-        # Already running event loop (Streamlit)
-        return asyncio.get_event_loop().run_until_complete(_fetch_finnhub(symbol))
+        # If no running loop, create one
+        return asyncio.run(_fetch_finnhub(symbol))
 
 # ------------------------------
 # SEC Async Fetch
@@ -120,9 +117,9 @@ async def _fetch_sec_cik_mapping():
 
 def get_sec_cik_mapping():
     try:
-        mapping, code, message = asyncio.run(_fetch_sec_cik_mapping())
+        mapping, code, message = asyncio.get_running_loop().run_until_complete(_fetch_sec_cik_mapping())
     except RuntimeError:
-        mapping, code, message = asyncio.get_event_loop().run_until_complete(_fetch_sec_cik_mapping())
+        mapping, code, message = asyncio.run(_fetch_sec_cik_mapping())
 
     if code:
         st.error(f"SEC CIK mapping error: {code} | {message}")
@@ -158,6 +155,6 @@ async def _fetch_sec_filings(symbol: str, count: int = 5):
 
 def get_sec_filings(symbol: str, count: int = 5):
     try:
-        return asyncio.run(_fetch_sec_filings(symbol, count))
+        return asyncio.get_running_loop().run_until_complete(_fetch_sec_filings(symbol, count))
     except RuntimeError:
-        return asyncio.get_event_loop().run_until_complete(_fetch_sec_filings(symbol, count))
+        return asyncio.run(_fetch_sec_filings(symbol, count))

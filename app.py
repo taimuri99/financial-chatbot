@@ -8,12 +8,10 @@ from src.fin_dashboard.ui import (
     display_ratios,
     display_trend_summary
 )
-from src.fin_dashboard.datasources import get_finnhub_company_data, get_sec_filings
+from src.fin_dashboard.datasources import get_finnhub_company_data, get_sec_filings, log_warning
 from src.fin_dashboard.retrieval import create_retriever
 from src.fin_dashboard.reports import create_pdf
 from src.fin_dashboard.analytics import compute_ratios, summarize_trends
-from src.fin_dashboard.datasources import log_warning  # if you want to log to file as well
-
 
 # ---------------------------
 # Initialize Streamlit UI
@@ -47,17 +45,25 @@ if st.button("🔍 Analyze"):
 
         # 1. Get Data
         with st.spinner(f"Fetching data for {ticker.upper()} ..."):
-            finnhub_data = get_finnhub_company_data(ticker.upper())
-            sec_data = get_sec_filings(ticker.upper(), count=5)
-        if not finnhub_data or finnhub_data.get("name") == "N/A":
-            output_box.error(f"❌ Could not fetch Finnhub data for {ticker.upper()}. Please check the ticker or try again later.")
+            finnhub_result = get_finnhub_company_data(ticker.upper())
+            sec_result = get_sec_filings(ticker.upper(), count=5)
+
+        finnhub_data = finnhub_result.get("data", {})
+        finnhub_errors = finnhub_result.get("errors", [])
+        sec_data = sec_result.get("data", [])
+        sec_errors = sec_result.get("errors", [])
+
+        # Display API errors
+        for err in finnhub_errors + sec_errors:
+            st.error(f"{err['source']} API Error: {err['code']} | {err['message']}")
+
+        if not finnhub_data:
+            output_box.error(f"❌ Could not fetch Finnhub data for {ticker.upper()}.")
             log_warning(f"Finnhub data missing for {ticker.upper()}")
-        st.stop()  # stop further processing
 
         if not sec_data:
             st.warning(f"⚠️ No SEC filings found for {ticker.upper()} or SEC API is unreachable.")
             log_warning(f"SEC filings missing for {ticker.upper()}")
-
 
         # 2. Run Analytics (NEW)
         with st.spinner("Computing financial ratios and trends..."):
@@ -81,12 +87,12 @@ if st.button("🔍 Analyze"):
         SEC Filings:
         {sec_summary or 'No filings available.'}
         """
-        
+
         with st.spinner("Generating AI insights..."):
             qa_chain = create_retriever(combined_text)
             answer = qa_chain.run(user_query)
         display_ai_insights(answer)
-        
+
         # 5. PDF Export
         with st.spinner("Generating PDF report..."):
             pdf_file = create_pdf(
@@ -103,8 +109,5 @@ if st.button("🔍 Analyze"):
 
         output_box.success("✅ Analysis complete!")
 
-        
-
     except Exception as e:
         output_box.error(f"❌ Error: {e}")
-
