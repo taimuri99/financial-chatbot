@@ -1,0 +1,19 @@
+# --- Core App ---
+streamlit==1.26.0
+requests==2.32.0
+fpdf==1.7.2
+
+# --- ML / AI ---
+torch>=2.0.0,<3.0.0  # CPU compatible, Hugging Face Spaces will resolve correct build
+transformers==4.44.0
+sentence-transformers==2.2.2
+
+# --- LangChain + Vector DB ---
+langchain==0.2.6
+langchain-community==0.2.6
+#chromadb==0.3.29
+faiss-cpu>=1.7.4
+
+# --- Data / Utils ---
+pandas>=2.0.3,<2.1.0
+numexpr>=2.7.3
