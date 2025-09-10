@@ -57,7 +57,7 @@ UI Output (cards, charts, PDF report)
 
 ## 🔹 Deployment
 
-* **Hugging Face Spaces**
+* **STREAMLIT Spaces**
 
   * Ensure `app.py` is your entrypoint
   * `requirements.txt` contains all dependencies

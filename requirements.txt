@@ -16,3 +16,7 @@ chromadb>=0.4.0,<0.5.0     # persistent Chroma vector store
 # --- Data / Utilities ---
 pandas>=2.0.3,<2.1.0
 numexpr>=2.7.3,<3.0.0
+
+# Gemini API
+langchain-google-genai
+google-generativeai
