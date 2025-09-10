@@ -59,9 +59,9 @@ UI Output (cards, charts, PDF report)
 
 * **Hugging Face Spaces**
 
-  * Ensure `src/fin_dashboard/main.py` is your entrypoint
+  * Ensure `app.py` is your entrypoint
   * `requirements.txt` contains all dependencies
-  * `.streamlit/config.toml` sets theme and layout
+  <!-- * `.streamlit/config.toml` sets theme and layout -->
 
 * **Local Run**
   pip install -r requirements.txt
