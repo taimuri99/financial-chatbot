@@ -1,129 +1,163 @@
-import requests
+import asyncio
+import httpx
 from .config import FINNHUB_API_KEY
 from .utils import safe_fetch
 import streamlit as st
 import logging
-import time
 
 # ------------------------------
 # Logging setup
 # ------------------------------
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [API_ERROR_CODE] %(message)s",
+    format="%(asctime)s [%(levelname)s] %(message)s",
 )
 
-def log_warning(message, code=None):
-    """Log warning with optional error code."""
-    msg = f"{message} | Code: {code}" if code else message
-    logging.warning(msg)
-    st.warning(msg)
+def log_warning(message):
+    logging.warning(message)
+    st.warning(message)  # display in Streamlit
 
-def log_error(message, code=None):
-    """Log error with optional error code."""
-    msg = f"{message} | Code: {code}" if code else message
-    logging.error(msg)
-    st.error(msg)
+def log_error(message):
+    logging.error(message)
+    st.error(message)  # display in Streamlit
 
 # ------------------------------
-# Retry utility with detailed API error codes
+# Async fetch with retry
 # ------------------------------
-def fetch_with_retry(url, headers=None, params=None, retries=3, delay=2, timeout=5):
-    """Retry GET requests with detailed error logging and codes."""
+async def fetch_with_retry_async(client, url, headers=None, params=None, retries=3, delay=2, timeout=5):
+    """Async GET requests with retries and return detailed error info."""
     for attempt in range(1, retries + 1):
         try:
-            res = requests.get(url, headers=headers, params=params, timeout=timeout)
+            res = await client.get(url, headers=headers, params=params, timeout=timeout)
             if res.status_code == 200:
-                return res
+                return {"success": True, "response": res}
             elif res.status_code == 404:
-                log_error(f"API 404 Not Found | URL: {url}", code="API_404")
-                return None
+                log_error(f"API 404 Not Found | URL: {url}")
+                return {"success": False, "code": 404, "message": "Not Found"}
             elif res.status_code == 429:
-                log_error(f"API 429 Rate Limit | URL: {url} | Attempt {attempt}", code="API_429")
+                log_error(f"API 429 Rate Limit | URL: {url} | Attempt {attempt}")
+                await asyncio.sleep(delay)
             elif 500 <= res.status_code < 600:
-                log_error(f"API {res.status_code} Server Error | URL: {url} | Attempt {attempt}", code=f"API_{res.status_code}")
+                log_error(f"API {res.status_code} Server Error | URL: {url} | Attempt {attempt}")
+                await asyncio.sleep(delay)
             else:
-                log_warning(f"API {res.status_code} Unexpected Response | URL: {url} | Attempt {attempt}", code=f"API_{res.status_code}")
-        except requests.RequestException as e:
-            log_error(f"Request exception: {e} | URL: {url} | Attempt {attempt}", code="REQ_EXCEPTION")
-        time.sleep(delay)
-    log_error(f"All retries failed for API URL: {url}", code="API_FAIL")
-    return None
+                log_warning(f"API {res.status_code} Unexpected Response | URL: {url} | Attempt {attempt}")
+                await asyncio.sleep(delay)
+        except httpx.RequestError as e:
+            log_error(f"Request exception: {e} | URL: {url} | Attempt {attempt}")
+            await asyncio.sleep(delay)
+    log_error(f"All retries failed for API URL: {url}")
+    return {"success": False, "code": "RETRIES_EXCEEDED", "message": f"All retries failed for {url}"}
 
 # ------------------------------
-# Finnhub Data Fetch
+# Finnhub Async Fetch
 # ------------------------------
-@st.cache_data(ttl=3600)
+async def _fetch_finnhub(symbol: str):
+    async with httpx.AsyncClient() as client:
+        base_url = "https://finnhub.io/api/v1"
+        urls = {
+            "profile": f"{base_url}/stock/profile2",
+            "quote": f"{base_url}/quote",
+            "metrics": f"{base_url}/stock/metric"
+        }
+        params_profile = {"symbol": symbol, "token": FINNHUB_API_KEY}
+        params_quote = {"symbol": symbol, "token": FINNHUB_API_KEY}
+        params_metrics = {"symbol": symbol, "metric": "all", "token": FINNHUB_API_KEY}
+
+        tasks = [
+            fetch_with_retry_async(client, urls["profile"], params=params_profile),
+            fetch_with_retry_async(client, urls["quote"], params=params_quote),
+            fetch_with_retry_async(client, urls["metrics"], params=params_metrics)
+        ]
+
+        profile_res, quote_res, metrics_res = await asyncio.gather(*tasks)
+
+        errors = []
+        profile = profile_res.get("response").json() if profile_res.get("success") else {}
+        quote = quote_res.get("response").json() if quote_res.get("success") else {}
+        metrics = metrics_res.get("response").json().get("metric", {}) if metrics_res.get("success") else {}
+
+        for res, name in zip([profile_res, quote_res, metrics_res], ["Profile", "Quote", "Metrics"]):
+            if not res.get("success"):
+                errors.append({"source": name, "code": res.get("code"), "message": res.get("message")})
+
+        return {
+            "data": {
+                "name": profile.get("name", "N/A"),
+                "sector": profile.get("finnhubIndustry", "N/A"),
+                "industry": profile.get("finnhubIndustry", "N/A"),
+                "marketCap": metrics.get("marketCapitalization", "N/A"),
+                "currentPrice": quote.get("c", "N/A"),
+                "52WeekHigh": metrics.get("52WeekHigh", "N/A"),
+                "52WeekLow": metrics.get("52WeekLow", "N/A"),
+                "description": profile.get("description", "N/A"),
+                "metric": metrics
+            },
+            "errors": errors
+        }
+
 def get_finnhub_company_data(symbol: str):
-    base_url = "https://finnhub.io/api/v1"
-
-    profile_res = fetch_with_retry(f"{base_url}/stock/profile2", params={"symbol": symbol, "token": FINNHUB_API_KEY})
-    profile = profile_res.json() if profile_res else {}
-    if not profile:
-        log_warning(f"Finnhub profile fetch returned empty for {symbol}", code="FH_PROFILE_EMPTY")
-
-    quote_res = fetch_with_retry(f"{base_url}/quote", params={"symbol": symbol, "token": FINNHUB_API_KEY})
-    quote = quote_res.json() if quote_res else {}
-    if not quote:
-        log_warning(f"Finnhub quote fetch returned empty for {symbol}", code="FH_QUOTE_EMPTY")
-
-    metrics_res = fetch_with_retry(f"{base_url}/stock/metric", params={"symbol": symbol, "metric": "all", "token": FINNHUB_API_KEY})
-    metrics = metrics_res.json().get("metric", {}) if metrics_res else {}
-    if not metrics:
-        log_warning(f"Finnhub metrics fetch returned empty for {symbol}", code="FH_METRICS_EMPTY")
-
-    return {
-        "name": profile.get("name", "N/A"),
-        "sector": profile.get("finnhubIndustry", "N/A"),
-        "industry": profile.get("finnhubIndustry", "N/A"),
-        "marketCap": metrics.get("marketCapitalization", "N/A"),
-        "currentPrice": quote.get("c", "N/A"),
-        "52WeekHigh": metrics.get("52WeekHigh", "N/A"),
-        "52WeekLow": metrics.get("52WeekLow", "N/A"),
-        "description": profile.get("description", "N/A"),
-        "metric": metrics
-    }
+    """Wrapper to safely run async fetch in Streamlit."""
+    try:
+        return asyncio.run(_fetch_finnhub(symbol))
+    except RuntimeError:
+        # Already running event loop (Streamlit)
+        return asyncio.get_event_loop().run_until_complete(_fetch_finnhub(symbol))
 
 # ------------------------------
-# SEC Filings Fetch
+# SEC Async Fetch
 # ------------------------------
 SEC_HEADERS = {"User-Agent": "MyPortfolioApp/1.0 (your-email@example.com)"}
 
-@st.cache_data(ttl=86400)
-def get_sec_cik_mapping():
+async def _fetch_sec_cik_mapping():
     url = "https://www.sec.gov/files/company_tickers.json"
-    res = fetch_with_retry(url, headers=SEC_HEADERS)
-    if not res:
-        log_error("SEC CIK mapping fetch failed (API issue)", code="SEC_CIK_FAIL")
-        return {}
-    return res.json()
+    async with httpx.AsyncClient() as client:
+        res = await fetch_with_retry_async(client, url, headers=SEC_HEADERS)
+        if not res.get("success"):
+            log_error("SEC CIK mapping fetch failed (API issue)")
+            return {}, res.get("code"), res.get("message")
+        return res.get("response").json(), None, None
 
-@st.cache_data(ttl=3600)
-def get_sec_filings(symbol: str, count: int = 5):
-    base_url = "https://data.sec.gov/submissions/"
+def get_sec_cik_mapping():
+    try:
+        mapping, code, message = asyncio.run(_fetch_sec_cik_mapping())
+    except RuntimeError:
+        mapping, code, message = asyncio.get_event_loop().run_until_complete(_fetch_sec_cik_mapping())
+
+    if code:
+        st.error(f"SEC CIK mapping error: {code} | {message}")
+    return mapping
+
+async def _fetch_sec_filings(symbol: str, count: int = 5):
     cik_lookup = get_sec_cik_mapping()
-
     cik = None
     for item in cik_lookup.values():
         if item.get('ticker', '').upper() == symbol.upper():
             cik = str(item.get('cik_str', '')).zfill(10)
             break
     if not cik:
-        log_warning(f"No CIK found for ticker {symbol}", code="SEC_CIK_NOT_FOUND")
-        return []
+        log_warning(f"No CIK found for ticker {symbol}")
+        return {"data": [], "errors": [{"source": "SEC", "code": "CIK_NOT_FOUND", "message": "No CIK mapping"}]}
 
-    filings_res = fetch_with_retry(f"{base_url}CIK{cik}.json", headers=SEC_HEADERS)
-    if not filings_res:
-        log_error(f"SEC filings fetch failed for {symbol} (API issue)", code="SEC_FILINGS_FAIL")
-        return []
+    base_url = "https://data.sec.gov/submissions/"
+    async with httpx.AsyncClient() as client:
+        filings_res = await fetch_with_retry_async(client, f"{base_url}CIK{cik}.json", headers=SEC_HEADERS)
+        if not filings_res.get("success"):
+            return {"data": [], "errors": [{"source": "SEC", "code": filings_res.get("code"), "message": filings_res.get("message")}]}
 
-    filings_data = filings_res.json()
-    recent_filings = filings_data.get("filings", {}).get("recent", {})
-    filings_list = []
-    for i in range(min(count, len(recent_filings.get("accessionNumber", [])))):
-        filings_list.append({
-            "form": recent_filings.get("form", ["N/A"])[i],
-            "date": recent_filings.get("filingDate", ["N/A"])[i],
-            "link": f"https://www.sec.gov/Archives/edgar/data/{cik}/{recent_filings.get('accessionNumber', [''])[i].replace('-', '')}/{recent_filings.get('accessionNumber', [''])[i]}.txt"
-        })
-    return filings_list
+        filings_data = filings_res.get("response").json()
+        recent_filings = filings_data.get("filings", {}).get("recent", {})
+        filings_list = []
+        for i in range(min(count, len(recent_filings.get("accessionNumber", [])))):
+            filings_list.append({
+                "form": recent_filings.get("form", ["N/A"])[i],
+                "date": recent_filings.get("filingDate", ["N/A"])[i],
+                "link": f"https://www.sec.gov/Archives/edgar/data/{cik}/{recent_filings.get('accessionNumber', [''])[i].replace('-', '')}/{recent_filings.get('accessionNumber', [''])[i]}.txt"
+            })
+        return {"data": filings_list, "errors": []}
+
+def get_sec_filings(symbol: str, count: int = 5):
+    try:
+        return asyncio.run(_fetch_sec_filings(symbol, count))
+    except RuntimeError:
+        return asyncio.get_event_loop().run_until_complete(_fetch_sec_filings(symbol, count))
