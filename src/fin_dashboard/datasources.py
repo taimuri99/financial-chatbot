@@ -15,26 +15,33 @@ logging.basicConfig(
 
 def log_warning(message):
     logging.warning(message)
-    st.warning(message)  # display warning in Streamlit
+    st.warning(message)
 
 def log_error(message):
     logging.error(message)
-    st.error(message)  # display error in Streamlit
+    st.error(message)
 
 # ------------------------------
-# Retry utility for robust API calls
+# Retry utility with detailed API error codes
 # ------------------------------
 def fetch_with_retry(url, headers=None, params=None, retries=3, delay=2, timeout=5):
-    """Retry GET requests with delay if it fails."""
+    """Retry GET requests with delay, log detailed HTTP errors."""
     for attempt in range(1, retries + 1):
         try:
             res = requests.get(url, headers=headers, params=params, timeout=timeout)
             if res.status_code == 200:
                 return res
+            elif res.status_code == 404:
+                log_error(f"API 404 Not Found | URL: {url}")
+                return None
+            elif res.status_code == 429:
+                log_error(f"API 429 Rate Limit | URL: {url} | Attempt {attempt}")
+            elif 500 <= res.status_code < 600:
+                log_error(f"API {res.status_code} Server Error | URL: {url} | Attempt {attempt}")
             else:
-                log_warning(f"Request failed ({res.status_code}) | URL: {url} | Attempt {attempt}")
+                log_warning(f"API {res.status_code} Unexpected Response | URL: {url} | Attempt {attempt}")
         except requests.RequestException as e:
-            log_warning(f"Request exception: {e} | URL: {url} | Attempt {attempt}")
+            log_error(f"Request exception: {e} | URL: {url} | Attempt {attempt}")
         time.sleep(delay)
     log_error(f"All retries failed for API URL: {url}")
     return None
@@ -42,24 +49,24 @@ def fetch_with_retry(url, headers=None, params=None, retries=3, delay=2, timeout
 # ------------------------------
 # Finnhub Data Fetch
 # ------------------------------
-@st.cache_data(ttl=3600)  # cache for 1 hour
+@st.cache_data(ttl=3600)
 def get_finnhub_company_data(symbol: str):
     base_url = "https://finnhub.io/api/v1"
 
     profile_res = fetch_with_retry(f"{base_url}/stock/profile2", params={"symbol": symbol, "token": FINNHUB_API_KEY})
     profile = profile_res.json() if profile_res else {}
     if not profile:
-        log_warning(f"Finnhub profile fetch failed for {symbol}")
+        log_warning(f"Finnhub profile fetch returned empty for {symbol}")
 
     quote_res = fetch_with_retry(f"{base_url}/quote", params={"symbol": symbol, "token": FINNHUB_API_KEY})
     quote = quote_res.json() if quote_res else {}
     if not quote:
-        log_warning(f"Finnhub quote fetch failed for {symbol}")
+        log_warning(f"Finnhub quote fetch returned empty for {symbol}")
 
     metrics_res = fetch_with_retry(f"{base_url}/stock/metric", params={"symbol": symbol, "metric": "all", "token": FINNHUB_API_KEY})
     metrics = metrics_res.json().get("metric", {}) if metrics_res else {}
     if not metrics:
-        log_warning(f"Finnhub metrics fetch failed for {symbol}")
+        log_warning(f"Finnhub metrics fetch returned empty for {symbol}")
 
     return {
         "name": profile.get("name", "N/A"),
@@ -78,7 +85,7 @@ def get_finnhub_company_data(symbol: str):
 # ------------------------------
 SEC_HEADERS = {"User-Agent": "MyPortfolioApp/1.0 (your-email@example.com)"}
 
-@st.cache_data(ttl=86400)  # cache SEC mapping for 1 day
+@st.cache_data(ttl=86400)
 def get_sec_cik_mapping():
     url = "https://www.sec.gov/files/company_tickers.json"
     res = fetch_with_retry(url, headers=SEC_HEADERS)
@@ -87,7 +94,7 @@ def get_sec_cik_mapping():
         return {}
     return res.json()
 
-@st.cache_data(ttl=3600)  # cache filings for 1 hour
+@st.cache_data(ttl=3600)
 def get_sec_filings(symbol: str, count: int = 5):
     base_url = "https://data.sec.gov/submissions/"
     cik_lookup = get_sec_cik_mapping()
