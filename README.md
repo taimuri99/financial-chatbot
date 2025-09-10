@@ -1,4 +1,4 @@
----
+<!-- ---
 title: Financial Report Assistant
 emoji: "📊"
 colorFrom: blue
@@ -7,7 +7,7 @@ sdk: streamlit
 sdk_version: "1.30.0"  # <-- Use a real Streamlit version
 app_file: app.py
 pinned: false
----
+--- -->
 
 # 📊 Financial + SEC Dashboard
 
