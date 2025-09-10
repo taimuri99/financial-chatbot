@@ -3,13 +3,12 @@ from .config import FINNHUB_API_KEY
 from .utils import safe_fetch
 import streamlit as st
 import logging
-import os
+import time
+import json
 
 # ------------------------------
 # Logging setup
 # ------------------------------
-import logging
-
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -21,29 +20,42 @@ def log_warning(message):
 def log_error(message):
     logging.error(message)
 
+# ------------------------------
+# Retry utility for robust API calls
+# ------------------------------
+def fetch_with_retry(url, headers=None, params=None, retries=3, delay=2):
+    """Retry GET requests with delay if it fails."""
+    for attempt in range(1, retries + 1):
+        try:
+            res = requests.get(url, headers=headers, params=params)
+            if res.ok:
+                return res
+            else:
+                log_warning(f"Request failed ({res.status_code}): {url}")
+        except Exception as e:
+            log_warning(f"Request exception: {e} | URL: {url}")
+        time.sleep(delay)
+    return None
 
 # ------------------------------
 # Finnhub Data Fetch
 # ------------------------------
-@st.cache_data(ttl=3600)  # cache for 1 hour
+@st.cache_data(ttl=3600)
 def get_finnhub_company_data(symbol: str):
     base_url = "https://finnhub.io/api/v1"
 
-    # Safe profile fetch
     profile_res = safe_fetch(requests.get, f"{base_url}/stock/profile2",
                              params={"symbol": symbol, "token": FINNHUB_API_KEY})
     profile = profile_res.json() if profile_res and profile_res.ok else {}
     if not profile:
         log_warning(f"Finnhub profile fetch failed for {symbol}")
 
-    # Safe quote fetch
     quote_res = safe_fetch(requests.get, f"{base_url}/quote",
                            params={"symbol": symbol, "token": FINNHUB_API_KEY})
     quote = quote_res.json() if quote_res and quote_res.ok else {}
     if not quote:
         log_warning(f"Finnhub quote fetch failed for {symbol}")
 
-    # Safe metrics fetch
     metrics_res = safe_fetch(requests.get, f"{base_url}/stock/metric",
                              params={"symbol": symbol, "metric": "all", "token": FINNHUB_API_KEY})
     metrics = metrics_res.json().get("metric", {}) if metrics_res and metrics_res.ok else {}
@@ -59,35 +71,42 @@ def get_finnhub_company_data(symbol: str):
         "52WeekHigh": metrics.get("52WeekHigh", "N/A"),
         "52WeekLow": metrics.get("52WeekLow", "N/A"),
         "description": profile.get("description", "N/A"),
-        "metric": metrics  # include full metrics for analytics.py
+        "metric": metrics
     }
 
 # ------------------------------
 # SEC Filings Fetch
 # ------------------------------
-@st.cache_data(ttl=3600)  # cache for 1 hour
+SEC_HEADERS = {"User-Agent": "MyPortfolioApp/1.0 (your-email@example.com)"}
+
+@st.cache_data(ttl=86400)  # cache SEC mapping for 1 day
+def get_sec_cik_mapping():
+    """Fetch SEC ticker → CIK mapping once and cache."""
+    url = "https://www.sec.gov/files/company_tickers.json"
+    res = fetch_with_retry(url, headers=SEC_HEADERS)
+    if not res:
+        log_warning("Failed to fetch SEC CIK mapping")
+        return {}
+    return res.json()
+
+@st.cache_data(ttl=3600)
 def get_sec_filings(symbol: str, count: int = 5):
     base_url = "https://data.sec.gov/submissions/"
 
-    # Safe CIK lookup
-    cik_lookup_res = safe_fetch(requests.get, "https://www.sec.gov/files/company_tickers.json")
-    if not cik_lookup_res or not cik_lookup_res.ok:
-        log_warning(f"SEC CIK mapping fetch failed for {symbol}")
-        return []
-
-    cik_lookup = cik_lookup_res.json()
+    # Lookup CIK
+    cik_lookup = get_sec_cik_mapping()
     cik = None
     for item in cik_lookup.values():
-        if item['ticker'].upper() == symbol.upper():
-            cik = str(item['cik_str']).zfill(10)
+        if item.get('ticker', '').upper() == symbol.upper():
+            cik = str(item.get('cik_str', '')).zfill(10)
             break
     if not cik:
         log_warning(f"No CIK found for ticker {symbol}")
         return []
 
-    # Safe filings fetch
-    filings_res = safe_fetch(requests.get, f"{base_url}CIK{cik}.json")
-    if not filings_res or not filings_res.ok:
+    # Fetch filings
+    filings_res = fetch_with_retry(f"{base_url}CIK{cik}.json", headers=SEC_HEADERS)
+    if not filings_res:
         log_warning(f"SEC filings fetch failed for {symbol}")
         return []
 
