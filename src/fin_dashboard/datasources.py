@@ -8,10 +8,9 @@ import os
 # ------------------------------
 # Logging setup
 # ------------------------------
-LOG_FILE = "logs/datasources.log"
-os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+import logging
+
 logging.basicConfig(
-    filename=LOG_FILE,
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
 )
@@ -21,6 +20,7 @@ def log_warning(message):
 
 def log_error(message):
     logging.error(message)
+
 
 # ------------------------------
 # Finnhub Data Fetch
