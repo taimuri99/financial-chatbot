@@ -4,7 +4,6 @@ from .utils import safe_fetch
 import streamlit as st
 import logging
 import time
-import json
 
 # ------------------------------
 # Logging setup
@@ -23,18 +22,19 @@ def log_error(message):
 # ------------------------------
 # Retry utility for robust API calls
 # ------------------------------
-def fetch_with_retry(url, headers=None, params=None, retries=3, delay=2):
-    """Retry GET requests with delay if it fails."""
+def fetch_with_retry(url, headers=None, params=None, retries=3, delay=2, timeout=5):
+    """Retry GET requests with delay and timeout if it fails."""
     for attempt in range(1, retries + 1):
         try:
-            res = requests.get(url, headers=headers, params=params)
+            res = requests.get(url, headers=headers, params=params, timeout=timeout)
             if res.ok:
                 return res
             else:
-                log_warning(f"Request failed ({res.status_code}): {url}")
-        except Exception as e:
+                log_warning(f"Request failed ({res.status_code}) | URL: {url}")
+        except requests.RequestException as e:
             log_warning(f"Request exception: {e} | URL: {url}")
         time.sleep(delay)
+    log_warning(f"All retries failed for URL: {url}")
     return None
 
 # ------------------------------
@@ -44,20 +44,32 @@ def fetch_with_retry(url, headers=None, params=None, retries=3, delay=2):
 def get_finnhub_company_data(symbol: str):
     base_url = "https://finnhub.io/api/v1"
 
-    profile_res = safe_fetch(requests.get, f"{base_url}/stock/profile2",
-                             params={"symbol": symbol, "token": FINNHUB_API_KEY})
+    # Profile
+    profile_res = safe_fetch(
+        requests.get, f"{base_url}/stock/profile2",
+        params={"symbol": symbol, "token": FINNHUB_API_KEY},
+        timeout=5
+    )
     profile = profile_res.json() if profile_res and profile_res.ok else {}
     if not profile:
         log_warning(f"Finnhub profile fetch failed for {symbol}")
 
-    quote_res = safe_fetch(requests.get, f"{base_url}/quote",
-                           params={"symbol": symbol, "token": FINNHUB_API_KEY})
+    # Quote
+    quote_res = safe_fetch(
+        requests.get, f"{base_url}/quote",
+        params={"symbol": symbol, "token": FINNHUB_API_KEY},
+        timeout=5
+    )
     quote = quote_res.json() if quote_res and quote_res.ok else {}
     if not quote:
         log_warning(f"Finnhub quote fetch failed for {symbol}")
 
-    metrics_res = safe_fetch(requests.get, f"{base_url}/stock/metric",
-                             params={"symbol": symbol, "metric": "all", "token": FINNHUB_API_KEY})
+    # Metrics
+    metrics_res = safe_fetch(
+        requests.get, f"{base_url}/stock/metric",
+        params={"symbol": symbol, "metric": "all", "token": FINNHUB_API_KEY},
+        timeout=5
+    )
     metrics = metrics_res.json().get("metric", {}) if metrics_res and metrics_res.ok else {}
     if not metrics:
         log_warning(f"Finnhub metrics fetch failed for {symbol}")
@@ -79,7 +91,7 @@ def get_finnhub_company_data(symbol: str):
 # ------------------------------
 SEC_HEADERS = {"User-Agent": "MyPortfolioApp/1.0 (your-email@example.com)"}
 
-@st.cache_data(ttl=86400)  # cache SEC mapping for 1 day
+@st.cache_data(ttl=86400)
 def get_sec_cik_mapping():
     """Fetch SEC ticker → CIK mapping once and cache."""
     url = "https://www.sec.gov/files/company_tickers.json"
