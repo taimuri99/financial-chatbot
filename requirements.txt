@@ -3,20 +3,15 @@ streamlit==1.26.0
 requests>=2.28.0,<3.0.0
 fpdf==1.7.2
 
-# --- ML / AI ---
-torch>=2.0.0,<3.0.0       # CPU-only, for Hugging Face / embeddings
-transformers>=4.44.0,<5.0.0
-sentence-transformers>=2.2.2,<3.0.0
-
 # --- LangChain + Vector DB ---
 langchain>=0.2.6,<0.3.0
 langchain-community>=0.2.6,<0.3.0
-chromadb>=0.4.0,<0.5.0     # persistent Chroma vector store
+chromadb>=0.4.0,<0.5.0
 
 # --- Data / Utilities ---
 pandas>=2.0.3,<2.1.0
 numexpr>=2.7.3,<3.0.0
 
-# Gemini API
-langchain-google-genai
-google-generativeai
+# --- Gemini API ---
+langchain-google-genai>=0.0.9
+google-generativeai>=0.5.0
