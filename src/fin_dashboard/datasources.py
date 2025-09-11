@@ -27,8 +27,8 @@ def run_async(coro):
     """Run coroutine safely inside Streamlit (handles already running loop)."""
     try:
         loop = asyncio.get_running_loop()
-        # Streamlit already has a running loop, schedule task
-        return loop.run_until_complete(coro)
+        # Streamlit already has a running loop, schedule task safely
+        return asyncio.run_coroutine_threadsafe(coro, loop).result()
     except RuntimeError:
         # No running loop, create one
         return asyncio.new_event_loop().run_until_complete(coro)
