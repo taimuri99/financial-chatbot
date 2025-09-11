@@ -3,7 +3,7 @@ from langchain_community.vectorstores import Chroma
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.docstore.document import Document
 from langchain.chains import RetrievalQA
-from src.fin_dashboard.llm import init_llm
+from .llm import init_llm
 import streamlit as st
 
 @st.cache_resource

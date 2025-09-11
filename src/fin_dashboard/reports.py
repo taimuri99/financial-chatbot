@@ -1,7 +1,7 @@
 from fpdf import FPDF
 from datetime import datetime
-from src.fin_dashboard.utils import format_currency
-from src.fin_dashboard.analytics import format_percent
+from .utils import format_currency
+from .analytics import format_percent
 
 def create_pdf(ticker, finnhub_data, ratios, trend_summary, sec_summary, ai_insights):
     pdf = FPDF()
