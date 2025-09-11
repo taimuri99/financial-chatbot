@@ -21,10 +21,23 @@ def log_error(message):
     st.error(message)
 
 # ------------------------------
+# Helper to safely run async in Streamlit
+# ------------------------------
+def run_async(coro):
+    """Run coroutine safely inside Streamlit (handles already running loop)."""
+    try:
+        loop = asyncio.get_running_loop()
+        # Streamlit already has a running loop, schedule task
+        return loop.run_until_complete(coro)
+    except RuntimeError:
+        # No running loop, create one
+        return asyncio.new_event_loop().run_until_complete(coro)
+
+# ------------------------------
 # Async fetch with retry
 # ------------------------------
 async def fetch_with_retry_async(client, url, headers=None, params=None, retries=3, delay=2, timeout=5):
-    """Async GET request with retries, logging errors outside loop to avoid hidden logs."""
+    """Async GET request with retries; logs errors outside the loop."""
     last_error = None
     for attempt in range(1, retries + 1):
         try:
@@ -75,10 +88,11 @@ async def _fetch_finnhub(symbol: str):
         quote = quote_res.get("response").json() if quote_res.get("success") else {}
         metrics = metrics_res.get("response").json().get("metric", {}) if metrics_res.get("success") else {}
 
-        # Collect errors
+        # Collect errors outside loops
         for res, name in zip([profile_res, quote_res, metrics_res], ["Profile", "Quote", "Metrics"]):
             if not res.get("success"):
                 errors.append({"source": name, "code": res.get("code"), "message": res.get("message")})
+                log_error(f"{name} fetch failed: {res.get('code')} | {res.get('message')}")
 
         return {
             "data": {
@@ -97,11 +111,7 @@ async def _fetch_finnhub(symbol: str):
 
 def get_finnhub_company_data(symbol: str):
     """Safe wrapper for Streamlit async context."""
-    try:
-        loop = asyncio.get_running_loop()
-        return loop.run_until_complete(_fetch_finnhub(symbol))
-    except RuntimeError:
-        return asyncio.run(_fetch_finnhub(symbol))
+    return run_async(_fetch_finnhub(symbol))
 
 # ------------------------------
 # SEC Fetch
@@ -117,12 +127,7 @@ async def _fetch_sec_cik_mapping():
         return res.get("response").json(), None, None
 
 def get_sec_cik_mapping():
-    try:
-        loop = asyncio.get_running_loop()
-        mapping, code, message = loop.run_until_complete(_fetch_sec_cik_mapping())
-    except RuntimeError:
-        mapping, code, message = asyncio.run(_fetch_sec_cik_mapping())
-
+    mapping, code, message = run_async(_fetch_sec_cik_mapping())
     if code:
         log_error(f"SEC CIK mapping error: {code} | {message}")
     return mapping
@@ -156,8 +161,4 @@ async def _fetch_sec_filings(symbol: str, count: int = 5):
         return {"data": filings_list, "errors": []}
 
 def get_sec_filings(symbol: str, count: int = 5):
-    try:
-        loop = asyncio.get_running_loop()
-        return loop.run_until_complete(_fetch_sec_filings(symbol, count))
-    except RuntimeError:
-        return asyncio.run(_fetch_sec_filings(symbol, count))
+    return run_async(_fetch_sec_filings(symbol, count))
