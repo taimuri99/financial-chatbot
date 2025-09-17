@@ -1,89 +1,133 @@
-<!-- ---
-title: Financial Report Assistant
-emoji: "📊"
-colorFrom: blue
-colorTo: indigo
-sdk: streamlit
-sdk_version: "1.30.0"  # <-- Use a real Streamlit version
-app_file: app.py
-pinned: false
---- -->
-
 # 📊 Financial + SEC Dashboard
 
-## Friendly Neighbourhood Finance Guy
+## Professional Financial Analysis Platform
 
-**Financial + SEC Dashboard** is a **professional portfolio project** combining **real-time market data, SEC filings, and AI-powered insights**. Users can query companies in natural language and generate **intuitive financial reports**.
+**Financial + SEC Dashboard** is a **streamlined financial analysis platform** that combines **real-time market data from Finnhub, SEC filings, and AI-powered insights**. Built with modern architecture principles, it provides professional financial analysis through an intuitive two-button workflow.
 
-The app is **deployable on Hugging Face Spaces** and demonstrates skills in **data engineering, NLP, AI pipelines, and financial analytics**.
+---
+
+## 🏗️ Architecture Overview
+
+### **Two-Workflow Design**
+- **📊 View Reports**: Fast data retrieval and professional display (no AI processing)
+- **🤖 AI Analysis**: Separate AI-powered insights workflow with context-aware analysis
+
+### **Tech Stack**
+- **Frontend**: Streamlit with custom CSS styling
+- **APIs**: Finnhub (market data) + SEC EDGAR (filings)
+- **AI**: Google Gemini (direct API integration)
+- **Data Processing**: Pandas with smart caching
+- **Deployment**: Streamlit Cloud / Hugging Face Spaces
 
 ---
 
 ## 🔹 Features
 
-* Real-time **company data** from Finnhub (profile, quotes, metrics)
-* Access recent **SEC filings** (10-K, 10-Q, 8-K, etc.)
-* **AI-powered insights** via Hugging Face LLM + embeddings
-* **Financial analytics**: ratios, benchmarks, and peer comparisons
-* **Downloadable PDF/HTML reports**
-* Professional **UI** with metrics cards and charts
+### **Data & Analytics**
+* Real-time **company profiles** and **stock quotes** from Finnhub
+* **SEC filings** access (10-K, 10-Q, 8-K, etc.) with direct links
+* **Financial ratio calculations** (P/E, Debt/Equity, ROE, etc.)
+* **Trend analysis** and performance metrics
+* **Professional UI** with metrics cards and responsive design
+
+### **AI-Powered Insights**
+* **Context-aware analysis** using company data and filings
+* **Natural language queries** about financial performance
+* **Professional financial analysis** with risk assessment
+* **Investment insights** and market positioning analysis
+
+### **User Experience**
+* **Two-button workflow** for optimal performance
+* **Session state management** - data persists between operations
+* **Smart caching** prevents redundant API calls
+* **Error handling** with graceful degradation
+* **Mobile-responsive** design
 
 ---
 
 ## 🔹 How It Works
 
-1. User selects a company ticker or enters a custom one.
-2. Data is fetched from **Finnhub API** and **SEC EDGAR**.
-3. Documents are processed into **chunks and embedded** for semantic retrieval.
-4. User questions are answered using a **Hugging Face LLM**.
-5. **Analytics layer** computes financial ratios, comparisons, and insights.
-6. Results displayed in **cards and charts**, with optional **PDF download**.
+### **View Reports Workflow**
+1. User selects company ticker
+2. **Fast data fetching** from Finnhub API and SEC
+3. **Professional dashboard display**:
+   - Company information and description
+   - Real-time financial metrics
+   - Key financial ratios
+   - Trend analysis
+   - Recent SEC filings with direct links
+4. Data cached for subsequent AI analysis
 
----
-
-## 🔹 Workflow Diagram
-
-User → UI (Streamlit) → Data Sources (Finnhub + SEC)
-↓
-Retrieval (Chroma DB)
-↓
-LLM (Hugging Face QA)
-↓
-Analytics Layer (ratios, comparisons)
-↓
-UI Output (cards, charts, PDF report)
-
----
-
-## 🔹 Deployment
-
-* **STREAMLIT Spaces**
-
-  * Ensure `app.py` is your entrypoint
-  * `requirements.txt` contains all dependencies
-  <!-- * `.streamlit/config.toml` sets theme and layout -->
-
-* **Local Run**
-  pip install -r requirements.txt
-  streamlit run src/fin\_dashboard/main.py
-
-* **Other Deployments**
-  Compatible with Docker, Heroku, or other cloud services.
+### **AI Analysis Workflow**
+1. Requires previously fetched company data
+2. User enters custom query about the company
+3. **Context preparation**: Combines all company data, ratios, and trends
+4. **AI processing**: Gemini analyzes data and generates insights
+5. **Professional analysis display** with investment considerations
 
 ---
 
 ## 🔹 Project Structure
 
-See `DIRECTORY.md` for a full explanation of files, folders, and workflow and `requirements.txt` for necessary requirements for deployment.
+```
+/
+├── README.md                 # Project overview (this file)
+├── requirements.txt          # Streamlined dependencies
+├── app.py                   # Main Streamlit application
+└── src/fin_dashboard/
+    ├── config.py            # API keys and configuration
+    ├── datasources.py       # Finnhub + SEC data fetchers
+    ├── llm.py              # Simplified Gemini AI integration
+    ├── ui.py               # Professional UI components
+    ├── analytics.py        # Financial ratios and calculations
+    └── utils.py            # Utility functions
+```
+
+### **Key Design Principles**
+- **Separation of Concerns**: Each module has a single responsibility
+- **Performance First**: Smart caching and optimized API calls
+- **Error Resilience**: Graceful handling of API failures
+- **User Experience**: Clear workflows and professional presentation
+- **Scalability**: Modular design for easy feature additions
 
 ---
 
-## 🔹 Professional Notes
+## 🔹 API Requirements
 
-* Lean, modular design: one file per concern
-* Clear separation of UI, data, LLM, analytics, and reporting
-* Portfolio-ready and recruiter-friendly
-* Production-ready: caching, error handling, PDF reporting included
-* Scalable: can grow to multiple LLMs, analytics modules, or front-end frameworks
+### **Required API Keys**
+1. **Finnhub API**: Free tier provides 60 calls/minute
+   - Sign up at [finnhub.io](https://finnhub.io)
+   - Add to Streamlit secrets as `FINNHUB_API_KEY`
+
+2. **Google Gemini API**: Free tier provides generous usage
+   - Get key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+   - Add to Streamlit secrets as `GEMINI_API_KEY`
+
+### **Streamlit Secrets Configuration**
+Create `.streamlit/secrets.toml`:
+```toml
+FINNHUB_API_KEY = "your_finnhub_api_key_here"
+GEMINI_API_KEY = "your_gemini_api_key_here"
+```
+
+---
+
+## 🔹 Performance Features
+
+### **Smart Caching**
+- **Company Data**: 5-minute cache for real-time accuracy
+- **SEC Filings**: 10-minute cache (less frequent updates)
+- **AI Model**: Resource caching prevents reinitialization
+
+### **Error Handling**
+- **API Failures**: Graceful degradation with clear user feedback
+- **Rate Limiting**: Automatic retry with exponential backoff
+- **Data Validation**: Robust handling of missing or malformed data
+
+### **User Experience**
+- **Session State**: Data persists between button clicks
+- **Loading States**: Clear progress indicators for all operations
+- **Responsive Design**: Works on desktop and mobile devices
+
 
 ---

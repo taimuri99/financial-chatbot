@@ -1,5 +1,5 @@
-import asyncio
-import httpx
+import requests
+import time
 from .config import FINNHUB_API_KEY
 import streamlit as st
 import logging
@@ -13,152 +13,237 @@ logging.basicConfig(
 )
 
 def log_warning(message):
+    """Log warning and display in Streamlit"""
     logging.warning(message)
-    st.warning(message)
 
 def log_error(message):
+    """Log error and display in Streamlit"""
     logging.error(message)
-    st.error(message)
 
 # ------------------------------
-# Helper to safely run async in Streamlit
+# Sync fetch with retry (simplified)
 # ------------------------------
-def run_async(coro):
-    """Run coroutine safely inside Streamlit (handles already running loop)."""
-    try:
-        loop = asyncio.get_running_loop()
-        # Streamlit already has a running loop, schedule task safely
-        return asyncio.run_coroutine_threadsafe(coro, loop).result()
-    except RuntimeError:
-        # No running loop, create one
-        return asyncio.new_event_loop().run_until_complete(coro)
-
-# ------------------------------
-# Async fetch with retry
-# ------------------------------
-async def fetch_with_retry_async(client, url, headers=None, params=None, retries=3, delay=2, timeout=5):
-    """Async GET request with retries; logs errors outside the loop."""
+def fetch_with_retry(url, headers=None, params=None, retries=2, delay=1, timeout=10):
+    """Synchronous GET request with retries"""
     last_error = None
+    
     for attempt in range(1, retries + 1):
         try:
-            res = await client.get(url, headers=headers, params=params, timeout=timeout)
-            if res.status_code == 200:
-                return {"success": True, "response": res}
-            elif res.status_code == 404:
-                last_error = {"code": 404, "message": "Not Found"}
-                break
-            elif res.status_code == 429 or 500 <= res.status_code < 600:
-                last_error = {"code": res.status_code, "message": "Retryable error"}
+            response = requests.get(
+                url, 
+                headers=headers, 
+                params=params, 
+                timeout=timeout
+            )
+            
+            if response.status_code == 200:
+                return {"success": True, "data": response.json()}
+            elif response.status_code == 404:
+                return {"success": False, "code": 404, "message": "Not Found"}
+            elif response.status_code == 429:
+                # Rate limited - wait longer
+                time.sleep(delay * 2)
+                continue
             else:
-                last_error = {"code": res.status_code, "message": "Unexpected response"}
-        except httpx.RequestError as e:
-            last_error = {"code": "REQUEST_EXCEPTION", "message": str(e)}
-        await asyncio.sleep(delay)
-
-    if last_error:
-        log_error(f"Failed to fetch {url}: {last_error['code']} | {last_error['message']}")
-    return {"success": False, **(last_error or {"code": "UNKNOWN", "message": "Unknown error"})}
+                last_error = {
+                    "code": response.status_code, 
+                    "message": f"HTTP {response.status_code}"
+                }
+                
+        except requests.exceptions.Timeout:
+            last_error = {"code": "TIMEOUT", "message": "Request timed out"}
+        except requests.exceptions.ConnectionError:
+            last_error = {"code": "CONNECTION", "message": "Connection failed"}
+        except requests.exceptions.RequestException as e:
+            last_error = {"code": "REQUEST_ERROR", "message": str(e)}
+        except Exception as e:
+            last_error = {"code": "UNKNOWN", "message": str(e)}
+        
+        if attempt < retries:
+            time.sleep(delay)
+    
+    return {"success": False, **last_error}
 
 # ------------------------------
-# Finnhub Fetch
+# Finnhub Fetch (Simplified)
 # ------------------------------
-async def _fetch_finnhub(symbol: str):
-    async with httpx.AsyncClient() as client:
-        base_url = "https://finnhub.io/api/v1"
-        urls = {
-            "profile": f"{base_url}/stock/profile2",
-            "quote": f"{base_url}/quote",
-            "metrics": f"{base_url}/stock/metric"
-        }
-
-        params_profile = {"symbol": symbol, "token": FINNHUB_API_KEY}
-        params_quote = {"symbol": symbol, "token": FINNHUB_API_KEY}
-        params_metrics = {"symbol": symbol, "metric": "all", "token": FINNHUB_API_KEY}
-
-        tasks = [
-            fetch_with_retry_async(client, urls["profile"], params=params_profile),
-            fetch_with_retry_async(client, urls["quote"], params=params_quote),
-            fetch_with_retry_async(client, urls["metrics"], params=params_metrics)
-        ]
-
-        profile_res, quote_res, metrics_res = await asyncio.gather(*tasks)
-
-        errors = []
-        profile = profile_res.get("response").json() if profile_res.get("success") else {}
-        quote = quote_res.get("response").json() if quote_res.get("success") else {}
-        metrics = metrics_res.get("response").json().get("metric", {}) if metrics_res.get("success") else {}
-
-        # Collect errors outside loops
-        for res, name in zip([profile_res, quote_res, metrics_res], ["Profile", "Quote", "Metrics"]):
-            if not res.get("success"):
-                errors.append({"source": name, "code": res.get("code"), "message": res.get("message")})
-                log_error(f"{name} fetch failed: {res.get('code')} | {res.get('message')}")
-
-        return {
-            "data": {
+@st.cache_data(ttl=300)  # Cache for 5 minutes
+def get_finnhub_company_data(symbol: str):
+    """Fetch company data from Finnhub API"""
+    
+    base_url = "https://finnhub.io/api/v1"
+    params = {"symbol": symbol, "token": FINNHUB_API_KEY}
+    
+    # Initialize results
+    errors = []
+    company_data = {
+        "name": "N/A",
+        "sector": "N/A", 
+        "industry": "N/A",
+        "marketCap": "N/A",
+        "currentPrice": "N/A",
+        "52WeekHigh": "N/A",
+        "52WeekLow": "N/A",
+        "description": "N/A",
+        "metric": {}
+    }
+    
+    try:
+        # 1. Company Profile
+        profile_result = fetch_with_retry(f"{base_url}/stock/profile2", params=params)
+        if profile_result["success"]:
+            profile = profile_result["data"]
+            company_data.update({
                 "name": profile.get("name", "N/A"),
                 "sector": profile.get("finnhubIndustry", "N/A"),
                 "industry": profile.get("finnhubIndustry", "N/A"),
-                "marketCap": metrics.get("marketCapitalization", "N/A"),
+                "description": profile.get("description", "N/A")[:500] + "..." if len(profile.get("description", "")) > 500 else profile.get("description", "N/A")
+            })
+        else:
+            errors.append({
+                "source": "Profile",
+                "code": profile_result.get("code"),
+                "message": profile_result.get("message")
+            })
+    
+        # 2. Stock Quote
+        quote_result = fetch_with_retry(f"{base_url}/quote", params=params)
+        if quote_result["success"]:
+            quote = quote_result["data"]
+            company_data.update({
                 "currentPrice": quote.get("c", "N/A"),
+            })
+        else:
+            errors.append({
+                "source": "Quote",
+                "code": quote_result.get("code"),
+                "message": quote_result.get("message")
+            })
+    
+        # 3. Basic Metrics (simplified)
+        metrics_params = {**params, "metric": "all"}
+        metrics_result = fetch_with_retry(f"{base_url}/stock/metric", params=metrics_params)
+        if metrics_result["success"]:
+            metrics_data = metrics_result["data"]
+            metrics = metrics_data.get("metric", {})
+            company_data.update({
+                "marketCap": metrics.get("marketCapitalization", "N/A"),
                 "52WeekHigh": metrics.get("52WeekHigh", "N/A"),
                 "52WeekLow": metrics.get("52WeekLow", "N/A"),
-                "description": profile.get("description", "N/A"),
                 "metric": metrics
-            },
-            "errors": errors
-        }
-
-def get_finnhub_company_data(symbol: str):
-    """Safe wrapper for Streamlit async context."""
-    return run_async(_fetch_finnhub(symbol))
-
-# ------------------------------
-# SEC Fetch
-# ------------------------------
-SEC_HEADERS = {"User-Agent": "MyPortfolioApp/1.0 (your-email@example.com)"}
-
-async def _fetch_sec_cik_mapping():
-    url = "https://www.sec.gov/files/company_tickers.json"
-    async with httpx.AsyncClient() as client:
-        res = await fetch_with_retry_async(client, url, headers=SEC_HEADERS)
-        if not res.get("success"):
-            return {}, res.get("code"), res.get("message")
-        return res.get("response").json(), None, None
-
-def get_sec_cik_mapping():
-    mapping, code, message = run_async(_fetch_sec_cik_mapping())
-    if code:
-        log_error(f"SEC CIK mapping error: {code} | {message}")
-    return mapping
-
-async def _fetch_sec_filings(symbol: str, count: int = 5):
-    cik_lookup = get_sec_cik_mapping()
-    cik = None
-    for item in cik_lookup.values():
-        if item.get("ticker", "").upper() == symbol.upper():
-            cik = str(item.get("cik_str", "")).zfill(10)
-            break
-    if not cik:
-        log_warning(f"No CIK found for ticker {symbol}")
-        return {"data": [], "errors": [{"source": "SEC", "code": "CIK_NOT_FOUND", "message": "No CIK mapping"}]}
-
-    base_url = "https://data.sec.gov/submissions/"
-    async with httpx.AsyncClient() as client:
-        filings_res = await fetch_with_retry_async(client, f"{base_url}CIK{cik}.json", headers=SEC_HEADERS)
-        if not filings_res.get("success"):
-            return {"data": [], "errors": [{"source": "SEC", "code": filings_res.get("code"), "message": filings_res.get("message")}]}
-
-        filings_data = filings_res.get("response").json()
-        recent_filings = filings_data.get("filings", {}).get("recent", {})
-        filings_list = []
-        for i in range(min(count, len(recent_filings.get("accessionNumber", [])))):
-            filings_list.append({
-                "form": recent_filings.get("form", ["N/A"])[i],
-                "date": recent_filings.get("filingDate", ["N/A"])[i],
-                "link": f"https://www.sec.gov/Archives/edgar/data/{cik}/{recent_filings.get('accessionNumber', [''])[i].replace('-', '')}/{recent_filings.get('accessionNumber', [''])[i]}.txt"
             })
-        return {"data": filings_list, "errors": []}
+        else:
+            errors.append({
+                "source": "Metrics",
+                "code": metrics_result.get("code"),
+                "message": metrics_result.get("message")
+            })
+    
+    except Exception as e:
+        errors.append({
+            "source": "General",
+            "code": "EXCEPTION",
+            "message": str(e)
+        })
+        log_error(f"Finnhub fetch error: {str(e)}")
+    
+    return {
+        "data": company_data,
+        "errors": errors
+    }
 
+# ------------------------------
+# SEC Fetch (Simplified)
+# ------------------------------
+SEC_HEADERS = {"User-Agent": "FinancialDashboard/1.0"}
+
+@st.cache_data(ttl=600)  # Cache for 10 minutes  
+def get_sec_cik_mapping():
+    """Get SEC CIK mapping data"""
+    try:
+        result = fetch_with_retry(
+            "https://www.sec.gov/files/company_tickers.json",
+            headers=SEC_HEADERS,
+            timeout=15
+        )
+        if result["success"]:
+            return result["data"]
+        else:
+            log_error(f"SEC CIK mapping error: {result.get('message')}")
+            return {}
+    except Exception as e:
+        log_error(f"SEC CIK mapping exception: {str(e)}")
+        return {}
+
+@st.cache_data(ttl=600)  # Cache for 10 minutes
 def get_sec_filings(symbol: str, count: int = 5):
-    return run_async(_fetch_sec_filings(symbol, count))
+    """Fetch SEC filings for a company"""
+    
+    try:
+        # Get CIK mapping
+        cik_lookup = get_sec_cik_mapping()
+        if not cik_lookup:
+            return {
+                "data": [],
+                "errors": [{"source": "SEC", "code": "CIK_MAPPING", "message": "Could not load CIK mapping"}]
+            }
+        
+        # Find CIK for symbol
+        cik = None
+        for item in cik_lookup.values():
+            if item.get("ticker", "").upper() == symbol.upper():
+                cik = str(item.get("cik_str", "")).zfill(10)
+                break
+        
+        if not cik:
+            return {
+                "data": [],
+                "errors": [{"source": "SEC", "code": "CIK_NOT_FOUND", "message": f"No CIK found for {symbol}"}]
+            }
+        
+        # Fetch filings
+        filings_url = f"https://data.sec.gov/submissions/CIK{cik}.json"
+        result = fetch_with_retry(filings_url, headers=SEC_HEADERS, timeout=15)
+        
+        if not result["success"]:
+            return {
+                "data": [],
+                "errors": [{"source": "SEC", "code": result.get("code"), "message": result.get("message")}]
+            }
+        
+        # Process filings data
+        filings_data = result["data"]
+        recent_filings = filings_data.get("filings", {}).get("recent", {})
+        
+        filings_list = []
+        forms = recent_filings.get("form", [])
+        dates = recent_filings.get("filingDate", [])
+        accessions = recent_filings.get("accessionNumber", [])
+        
+        for i in range(min(count, len(forms))):
+            filing = {
+                "form": forms[i] if i < len(forms) else "N/A",
+                "date": dates[i] if i < len(dates) else "N/A",
+                "accession": accessions[i] if i < len(accessions) else "N/A"
+            }
+            
+            # Generate filing URL
+            if filing["accession"] != "N/A":
+                clean_accession = filing["accession"].replace("-", "")
+                filing["link"] = f"https://www.sec.gov/Archives/edgar/data/{cik}/{clean_accession}/{filing['accession']}.txt"
+            else:
+                filing["link"] = "N/A"
+                
+            filings_list.append(filing)
+        
+        return {
+            "data": filings_list,
+            "errors": []
+        }
+        
+    except Exception as e:
+        log_error(f"SEC filings error: {str(e)}")
+        return {
+            "data": [],
+            "errors": [{"source": "SEC", "code": "EXCEPTION", "message": str(e)}]
+        }

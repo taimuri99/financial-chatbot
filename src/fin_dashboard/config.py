@@ -1,15 +1,24 @@
 import streamlit as st
 
-# Hugging Face secret for Finnhub
-FINNHUB_API_KEY = st.secrets["FINNHUB_API_KEY"]
-GOOGLE_API_KEY = st.secrets["GEMINI_API_KEY"]
+# API Keys from Streamlit secrets
+FINNHUB_API_KEY = st.secrets.get("FINNHUB_API_KEY", "")
+GOOGLE_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
-# Model names and parameters # --- Gemini / LLM Configuration ---
-MODEL_NAME = "gemini-1.5-flash"
-
-# --- Embeddings Model (still needed for Chroma) ---
-EMBEDDINGS_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
-MAX_NEW_TOKENS = 256
+# Gemini Configuration
 TEMPERATURE = 0.2
 
+# App Configuration
+APP_NAME = "Financial Dashboard"
+APP_VERSION = "1.0.0"
 
+# API Endpoints
+FINNHUB_BASE_URL = "https://finnhub.io/api/v1"
+SEC_BASE_URL = "https://data.sec.gov"
+
+# Cache Settings (in seconds)
+CACHE_TTL_SHORT = 300   # 5 minutes
+CACHE_TTL_LONG = 600    # 10 minutes
+
+# UI Configuration
+DEFAULT_TICKERS = ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN", "NVDA", "META"]
+MAX_SEC_FILINGS = 5
