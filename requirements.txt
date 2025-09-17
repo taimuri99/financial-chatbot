@@ -8,6 +8,6 @@ google-generativeai>=0.3.0
 # --- Data Processing ---
 pandas>=2.0.3
 
-# --- Optional: Charts and Visualization ---
+# --- Charts and Visualization ---
 plotly>=5.0.0
 altair>=4.0.0

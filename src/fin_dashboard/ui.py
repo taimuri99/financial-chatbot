@@ -1,6 +1,12 @@
 import streamlit as st
 from .utils import format_currency
 from .analytics import compute_ratios, summarize_trends
+from .charts import (
+    create_price_chart, 
+    create_ratios_chart, 
+    create_metrics_gauge_chart,
+    create_trend_chart
+)
 
 def init_streamlit():
     """Initialize Streamlit configuration and custom styling"""
@@ -154,7 +160,7 @@ def display_company_info(finnhub_data):
     """, unsafe_allow_html=True)
 
 def display_financial_metrics(finnhub_data):
-    """Display key financial metrics in a grid layout"""
+    """Display key financial metrics in a grid layout with charts"""
     if not finnhub_data:
         st.warning("⚠️ No financial metrics available")
         return
@@ -192,6 +198,48 @@ def display_financial_metrics(finnhub_data):
         st.metric("52W Low", week_low)
     
     st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Add Historical Price Chart
+    historical_data = finnhub_data.get('historical_prices', {})
+    if historical_data and historical_data.get('dates') and len(historical_data['dates']) > 0:
+        st.markdown("""
+        <div class="report-card">
+            <div class="card-title">📈 Stock Price Chart (30 Days)</div>
+        """, unsafe_allow_html=True)
+        
+        price_chart = create_price_chart(
+            historical_data, 
+            finnhub_data.get('name', 'Company'),
+            finnhub_data.get('symbol', 'TICKER')
+        )
+        
+        if price_chart:
+            st.plotly_chart(price_chart, use_container_width=True)
+        else:
+            st.info("📊 Price chart data not available")
+            
+        st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Add Price Range Gauge
+    current_price = finnhub_data.get('currentPrice', 'N/A')
+    week_high = finnhub_data.get('52WeekHigh', 'N/A')
+    week_low = finnhub_data.get('52WeekLow', 'N/A')
+    
+    if all(x != 'N/A' for x in [current_price, week_high, week_low]):
+        st.markdown("""
+        <div class="report-card">
+            <div class="card-title">🎯 Price Position</div>
+        """, unsafe_allow_html=True)
+        
+        gauge_chart = create_metrics_gauge_chart(
+            current_price, week_high, week_low, 
+            finnhub_data.get('symbol', 'TICKER')
+        )
+        
+        if gauge_chart:
+            st.plotly_chart(gauge_chart, use_container_width=True)
+            
+        st.markdown("</div>", unsafe_allow_html=True)
 
 def display_ratios(finnhub_data):
     """Display financial ratios in a professional layout"""

@@ -1,5 +1,6 @@
 import requests
 import time
+from datetime import datetime, timedelta
 from .config import FINNHUB_API_KEY
 import streamlit as st
 import logging
@@ -65,7 +66,83 @@ def fetch_with_retry(url, headers=None, params=None, retries=2, delay=1, timeout
     return {"success": False, **last_error}
 
 # ------------------------------
-# Finnhub Fetch (Simplified)
+# Historical Price Data (NEW)
+# ------------------------------
+@st.cache_data(ttl=3600)  # Cache for 1 hour
+def get_historical_prices(symbol: str, days: int = 30):
+    """
+    Fetch historical price data for charting
+    Args:
+        symbol: Stock ticker
+        days: Number of days of history to fetch
+    """
+    try:
+        # Calculate date range
+        end_date = datetime.now()
+        start_date = end_date - timedelta(days=days)
+        
+        # Convert to Unix timestamps
+        start_timestamp = int(start_date.timestamp())
+        end_timestamp = int(end_date.timestamp())
+        
+        # Finnhub historical data endpoint
+        url = "https://finnhub.io/api/v1/stock/candle"
+        params = {
+            "symbol": symbol,
+            "resolution": "D",  # Daily resolution
+            "from": start_timestamp,
+            "to": end_timestamp,
+            "token": FINNHUB_API_KEY
+        }
+        
+        result = fetch_with_retry(url, params=params, timeout=15)
+        
+        if not result["success"]:
+            return {
+                "dates": [],
+                "prices": [],
+                "error": result.get("message", "Failed to fetch historical data")
+            }
+        
+        data = result["data"]
+        
+        # Check if we got valid data
+        if data.get("s") == "no_data" or not data.get("t"):
+            return {
+                "dates": [],
+                "prices": [],
+                "error": "No historical data available"
+            }
+        
+        # Extract and format data
+        timestamps = data.get("t", [])
+        close_prices = data.get("c", [])
+        
+        if not timestamps or not close_prices:
+            return {
+                "dates": [],
+                "prices": [],
+                "error": "Invalid data format"
+            }
+        
+        # Convert timestamps to dates
+        dates = [datetime.fromtimestamp(ts).strftime('%Y-%m-%d') for ts in timestamps]
+        
+        return {
+            "dates": dates,
+            "prices": close_prices,
+            "error": None
+        }
+        
+    except Exception as e:
+        return {
+            "dates": [],
+            "prices": [],
+            "error": str(e)
+        }
+
+# ------------------------------
+# Finnhub Fetch (Enhanced)
 # ------------------------------
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def get_finnhub_company_data(symbol: str):
@@ -85,7 +162,8 @@ def get_finnhub_company_data(symbol: str):
         "52WeekHigh": "N/A",
         "52WeekLow": "N/A",
         "description": "N/A",
-        "metric": {}
+        "metric": {},
+        "historical_prices": {}  # NEW: Add historical price data
     }
     
     try:
@@ -120,7 +198,7 @@ def get_finnhub_company_data(symbol: str):
                 "message": quote_result.get("message")
             })
     
-        # 3. Basic Metrics (simplified)
+        # 3. Basic Metrics
         metrics_params = {**params, "metric": "all"}
         metrics_result = fetch_with_retry(f"{base_url}/stock/metric", params=metrics_params)
         if metrics_result["success"]:
@@ -137,6 +215,17 @@ def get_finnhub_company_data(symbol: str):
                 "source": "Metrics",
                 "code": metrics_result.get("code"),
                 "message": metrics_result.get("message")
+            })
+        
+        # 4. Historical Prices (NEW)
+        historical_data = get_historical_prices(symbol, days=30)
+        company_data["historical_prices"] = historical_data
+        
+        if historical_data.get("error"):
+            errors.append({
+                "source": "Historical",
+                "code": "HIST_ERROR",
+                "message": historical_data["error"]
             })
     
     except Exception as e:
