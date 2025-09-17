@@ -1,4 +1,6 @@
 import streamlit as st
+import requests
+import traceback
 from src.fin_dashboard.ui import (
     init_streamlit,
     display_company_info,
@@ -11,7 +13,104 @@ from src.fin_dashboard.ui import (
 from src.fin_dashboard.datasources import get_finnhub_company_data, get_sec_filings
 from src.fin_dashboard.llm import get_simple_ai_analysis
 from src.fin_dashboard.analytics import compute_ratios, summarize_trends
-import traceback
+from src.fin_dashboard.config import FINNHUB_API_KEY
+
+# ---------------------------
+# DEBUG FUNCTIONS
+# ---------------------------
+def debug_finnhub_api():
+    """Debug function to check Finnhub API response"""
+    st.write("🔍 **Debugging Finnhub API**")
+    
+    # Check if API key exists
+    if not FINNHUB_API_KEY:
+        st.error("❌ No Finnhub API key found in secrets!")
+        return
+    
+    st.write(f"**API Key Length:** {len(FINNHUB_API_KEY)} characters")
+    st.write(f"**API Key Preview:** {FINNHUB_API_KEY[:8]}...")
+    
+    # Test API key validity
+    test_url = "https://finnhub.io/api/v1/stock/profile2"
+    test_params = {"symbol": "AAPL", "token": FINNHUB_API_KEY}
+    
+    try:
+        st.write("**Testing Profile Endpoint...**")
+        response = requests.get(test_url, params=test_params, timeout=10)
+        st.write(f"**Status Code:** {response.status_code}")
+        
+        if response.status_code == 200:
+            data = response.json()
+            st.write("**✅ Profile Data (First few fields):**")
+            st.json({k: v for k, v in list(data.items())[:5]} if data else "Empty response")
+        else:
+            st.error(f"**❌ Profile Error:** {response.text}")
+            
+        # Test metrics endpoint  
+        st.write("**Testing Metrics Endpoint...**")
+        metrics_url = "https://finnhub.io/api/v1/stock/metric"
+        metrics_params = {"symbol": "AAPL", "metric": "all", "token": FINNHUB_API_KEY}
+        
+        metrics_response = requests.get(metrics_url, params=metrics_params, timeout=10)
+        st.write(f"**Metrics Status:** {metrics_response.status_code}")
+        
+        if metrics_response.status_code == 200:
+            metrics_data = metrics_response.json()
+            st.write("**✅ Metrics Data Structure:**")
+            if metrics_data and 'metric' in metrics_data:
+                # Show just a few key metrics to avoid clutter
+                key_metrics = {
+                    'peNormalizedAnnual': metrics_data['metric'].get('peNormalizedAnnual'),
+                    'grossMarginAnnual': metrics_data['metric'].get('grossMarginAnnual'),
+                    'netProfitMarginAnnual': metrics_data['metric'].get('netProfitMarginAnnual'),
+                    'revenueGrowthTTMYoy': metrics_data['metric'].get('revenueGrowthTTMYoy'),
+                    'marketCapitalization': metrics_data['metric'].get('marketCapitalization')
+                }
+                st.json(key_metrics)
+            else:
+                st.json(metrics_data)
+        else:
+            st.error(f"**❌ Metrics Error:** {metrics_response.text}")
+            
+    except Exception as e:
+        st.error(f"**❌ API Debug Error:** {e}")
+
+def debug_sec_api():
+    """Debug SEC API access"""
+    st.write("🔍 **Debugging SEC API**")
+    
+    urls_to_test = [
+        "https://www.sec.gov/files/company_tickers.json",
+        "https://data.sec.gov/files/company_tickers.json"
+    ]
+    
+    headers = {
+        "User-Agent": "FinancialDashboard/1.0 (student.project@email.com)",
+        "Accept": "application/json",
+        "Accept-Encoding": "gzip, deflate",
+        "Connection": "keep-alive"
+    }
+    
+    for url in urls_to_test:
+        st.write(f"**Testing:** {url}")
+        try:
+            response = requests.get(url, headers=headers, timeout=15)
+            st.write(f"**Status:** {response.status_code}")
+            st.write(f"**Headers:** {dict(list(response.headers.items())[:3])}")
+            
+            if response.status_code == 200:
+                data = response.json()
+                st.success(f"✅ Success! Got {len(data)} companies")
+                # Show first company as example
+                if data:
+                    first_key = list(data.keys())[0]
+                    st.json({first_key: data[first_key]})
+                break
+            else:
+                st.error(f"❌ Failed: {response.text[:200]}")
+                
+        except Exception as e:
+            st.error(f"❌ Exception: {str(e)}")
 
 # ---------------------------
 # Initialize Streamlit UI
@@ -19,9 +118,21 @@ import traceback
 init_streamlit()
 
 # ---------------------------
-# Sidebar controls
+# Sidebar controls + DEBUG
 # ---------------------------
 st.sidebar.header("⚙️ Controls")
+
+# Add debug section
+st.sidebar.header("🔧 Debug Tools")
+if st.sidebar.button("Debug Finnhub API"):
+    debug_finnhub_api()
+    st.stop()
+
+if st.sidebar.button("Debug SEC API"):
+    debug_sec_api()  
+    st.stop()
+
+# Regular controls
 example_tickers = ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN"]
 ticker = st.sidebar.selectbox(
     "Select or enter Stock Ticker:", example_tickers + ["Custom..."]
