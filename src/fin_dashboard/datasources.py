@@ -153,88 +153,134 @@ def get_finnhub_company_data(symbol: str):
     }
 
 # ------------------------------
-# SEC Fetch (Simplified)
+# SEC Fetch (Improved with Better Debugging)
 # ------------------------------
-SEC_HEADERS = {"User-Agent": "FinancialDashboard/1.0"}
+SEC_HEADERS = {
+    "User-Agent": "FinancialDashboard/1.0 (student.research@university.edu)",
+    "Accept": "application/json",
+    "From": "student.research@university.edu"
+}
 
-@st.cache_data(ttl=600)  # Cache for 10 minutes  
+@st.cache_data(ttl=600, show_spinner=False)
 def get_sec_cik_mapping():
-    """Get SEC CIK mapping data"""
+    """Get SEC CIK mapping data with better debugging"""
     try:
         result = fetch_with_retry(
             "https://www.sec.gov/files/company_tickers.json",
             headers=SEC_HEADERS,
-            timeout=15
+            timeout=20,
+            retries=3
         )
+        
         if result["success"]:
-            return result["data"]
+            data = result["data"]
+            if data and len(data) > 0:
+                # Success - log it
+                st.success(f"✅ SEC CIK mapping loaded: {len(data)} companies")
+                return data
+            else:
+                # Empty response
+                st.warning("⚠️ SEC returned empty data")
+                return {}
         else:
-            log_error(f"SEC CIK mapping error: {result.get('message')}")
+            # API call failed
+            error_msg = result.get("message", "Unknown error")
+            st.warning(f"⚠️ SEC CIK mapping failed: {error_msg}")
             return {}
+            
     except Exception as e:
-        log_error(f"SEC CIK mapping exception: {str(e)}")
+        st.error(f"❌ SEC CIK mapping exception: {str(e)}")
         return {}
 
-@st.cache_data(ttl=600)  # Cache for 10 minutes
+@st.cache_data(ttl=600, show_spinner=False)
 def get_sec_filings(symbol: str, count: int = 5):
-    """Fetch SEC filings for a company"""
+    """Fetch SEC filings with better error handling"""
     
     try:
-        # Get CIK mapping
+        # Step 1: Get CIK mapping
         cik_lookup = get_sec_cik_mapping()
+        
         if not cik_lookup:
             return {
                 "data": [],
-                "errors": [{"source": "SEC", "code": "CIK_MAPPING", "message": "Could not load CIK mapping"}]
+                "errors": [{"source": "SEC", "code": "CIK_MAPPING_EMPTY", "message": "CIK mapping returned empty"}]
             }
         
-        # Find CIK for symbol
+        # Step 2: Find CIK for symbol
         cik = None
-        for item in cik_lookup.values():
-            if item.get("ticker", "").upper() == symbol.upper():
+        symbol_upper = symbol.upper()
+        
+        # Debug: Show what we're looking for (only in debug mode)
+        if st.session_state.get('debug_mode', False):
+            st.write(f"🔍 Looking for ticker: {symbol_upper}")
+        
+        for key, item in cik_lookup.items():
+            item_ticker = item.get("ticker", "").upper()
+            if item_ticker == symbol_upper:
                 cik = str(item.get("cik_str", "")).zfill(10)
+                if st.session_state.get('debug_mode', False):
+                    st.write(f"✅ Found CIK: {cik} for {symbol_upper}")
                 break
         
         if not cik:
+            # Show some examples of what tickers are available
+            example_tickers = []
+            for key, item in list(cik_lookup.items())[:5]:
+                example_tickers.append(item.get("ticker", ""))
+            
             return {
                 "data": [],
-                "errors": [{"source": "SEC", "code": "CIK_NOT_FOUND", "message": f"No CIK found for {symbol}"}]
+                "errors": [{"source": "SEC", "code": "CIK_NOT_FOUND", 
+                          "message": f"No CIK found for {symbol_upper}. Examples available: {', '.join(example_tickers)}"}]
             }
         
-        # Fetch filings
+        # Step 3: Fetch filings for this CIK
         filings_url = f"https://data.sec.gov/submissions/CIK{cik}.json"
-        result = fetch_with_retry(filings_url, headers=SEC_HEADERS, timeout=15)
+        if st.session_state.get('debug_mode', False):
+            st.write(f"🔍 Fetching filings from: {filings_url}")
+        
+        result = fetch_with_retry(filings_url, headers=SEC_HEADERS, timeout=20)
         
         if not result["success"]:
             return {
                 "data": [],
-                "errors": [{"source": "SEC", "code": result.get("code"), "message": result.get("message")}]
+                "errors": [{"source": "SEC", "code": result.get("code"), 
+                          "message": f"Filings fetch failed: {result.get('message')}"}]
             }
         
-        # Process filings data
+        # Step 4: Process filings data
         filings_data = result["data"]
         recent_filings = filings_data.get("filings", {}).get("recent", {})
         
+        if not recent_filings:
+            return {
+                "data": [],
+                "errors": [{"source": "SEC", "code": "NO_RECENT_FILINGS", 
+                          "message": "No recent filings found in response"}]
+            }
+        
+        # Step 5: Build filings list
         filings_list = []
         forms = recent_filings.get("form", [])
         dates = recent_filings.get("filingDate", [])
         accessions = recent_filings.get("accessionNumber", [])
         
+        if st.session_state.get('debug_mode', False):
+            st.write(f"✅ Found {len(forms)} filings")
+        
         for i in range(min(count, len(forms))):
-            filing = {
-                "form": forms[i] if i < len(forms) else "N/A",
-                "date": dates[i] if i < len(dates) else "N/A",
-                "accession": accessions[i] if i < len(accessions) else "N/A"
-            }
-            
-            # Generate filing URL
-            if filing["accession"] != "N/A":
+            if i < len(forms) and i < len(dates) and i < len(accessions):
+                filing = {
+                    "form": forms[i],
+                    "date": dates[i],
+                    "accession": accessions[i]
+                }
+                
+                # Generate filing URL
                 clean_accession = filing["accession"].replace("-", "")
                 filing["link"] = f"https://www.sec.gov/Archives/edgar/data/{cik}/{clean_accession}/{filing['accession']}.txt"
-            else:
-                filing["link"] = "N/A"
                 
-            filings_list.append(filing)
+                filings_list.append(filing)
         
         return {
             "data": filings_list,
@@ -242,8 +288,9 @@ def get_sec_filings(symbol: str, count: int = 5):
         }
         
     except Exception as e:
-        log_error(f"SEC filings error: {str(e)}")
+        error_msg = f"SEC filings error: {str(e)}"
+        st.error(error_msg)
         return {
             "data": [],
-            "errors": [{"source": "SEC", "code": "EXCEPTION", "message": str(e)}]
+            "errors": [{"source": "SEC", "code": "EXCEPTION", "message": error_msg}]
         }

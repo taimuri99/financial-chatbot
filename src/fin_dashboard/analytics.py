@@ -3,7 +3,11 @@ def format_percent(value):
     try:
         if value is None:
             return "N/A"
-        return "{:.2f}%".format(float(value) * 100)
+        
+        # Check if Finnhub returns percentages as whole numbers or decimals
+        # Based on debug: grossMarginAnnual: 46.21 (this is 46.21%, not 0.4621)
+        # So we DON'T multiply by 100
+        return "{:.2f}%".format(float(value))
     except (ValueError, TypeError):
         return "N/A"
 
@@ -49,7 +53,7 @@ def compute_ratios(finnhub_data):
         else:
             ratios["Debt/Equity"] = "N/A"
         
-        # Profitability Ratios
+        # Profitability Ratios  
         roe = metrics.get("roeAnnual")
         if roe:
             ratios["ROE"] = format_percent(roe)
@@ -114,7 +118,7 @@ def summarize_trends(finnhub_data):
         else:
             summary_lines.append("Revenue Growth (YoY): N/A")
         
-        # Profit Margin
+        # Profit Margin  
         if profit_margin is not None:
             summary_lines.append(f"Net Profit Margin: {format_percent(profit_margin)}")
         else:
