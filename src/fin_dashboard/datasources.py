@@ -1,5 +1,8 @@
 import requests
 import time
+import yfinance as yf
+import pandas as pd
+import numpy as np
 from datetime import datetime, timedelta
 from .config import FINNHUB_API_KEY
 import streamlit as st
@@ -66,87 +69,206 @@ def fetch_with_retry(url, headers=None, params=None, retries=2, delay=1, timeout
     return {"success": False, **last_error}
 
 # ------------------------------
-# Historical Price Data (NEW)
+# UPGRADE 1: Yahoo Finance Historical Data
 # ------------------------------
 @st.cache_data(ttl=3600)  # Cache for 1 hour
-def get_historical_prices(symbol: str, days: int = 30):
+def get_yahoo_historical_data(symbol: str, period: str = "1mo"):
     """
-    Fetch historical price data for charting
+    Fetch historical data from Yahoo Finance
     Args:
         symbol: Stock ticker
-        days: Number of days of history to fetch
+        period: Time period ("1mo", "3mo", "6mo", "1y", "2y", "5y")
     """
     try:
-        # Calculate date range
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=days)
+        # Create yfinance ticker object
+        ticker = yf.Ticker(symbol)
         
-        # Convert to Unix timestamps
-        start_timestamp = int(start_date.timestamp())
-        end_timestamp = int(end_date.timestamp())
+        # Download historical data
+        hist_data = ticker.history(period=period)
         
-        # Finnhub historical data endpoint
-        url = "https://finnhub.io/api/v1/stock/candle"
-        params = {
-            "symbol": symbol,
-            "resolution": "D",  # Daily resolution
-            "from": start_timestamp,
-            "to": end_timestamp,
-            "token": FINNHUB_API_KEY
-        }
-        
-        result = fetch_with_retry(url, params=params, timeout=15)
-        
-        if not result["success"]:
+        if hist_data.empty:
             return {
                 "dates": [],
                 "prices": [],
-                "error": result.get("message", "Failed to fetch historical data")
+                "volumes": [],
+                "highs": [],
+                "lows": [],
+                "error": f"No data available for {symbol}"
             }
         
-        data = result["data"]
-        
-        # Check if we got valid data
-        if data.get("s") == "no_data" or not data.get("t"):
-            return {
-                "dates": [],
-                "prices": [],
-                "error": "No historical data available"
-            }
-        
-        # Extract and format data
-        timestamps = data.get("t", [])
-        close_prices = data.get("c", [])
-        
-        if not timestamps or not close_prices:
-            return {
-                "dates": [],
-                "prices": [],
-                "error": "Invalid data format"
-            }
-        
-        # Convert timestamps to dates
-        dates = [datetime.fromtimestamp(ts).strftime('%Y-%m-%d') for ts in timestamps]
+        # Convert to lists for JSON serialization
+        dates = hist_data.index.strftime('%Y-%m-%d').tolist()
+        prices = hist_data['Close'].tolist()
+        volumes = hist_data['Volume'].tolist()
+        highs = hist_data['High'].tolist()
+        lows = hist_data['Low'].tolist()
         
         return {
             "dates": dates,
-            "prices": close_prices,
-            "error": None
+            "prices": prices,
+            "volumes": volumes,
+            "highs": highs,
+            "lows": lows,
+            "error": None,
+            "source": "Yahoo Finance"
         }
         
     except Exception as e:
         return {
             "dates": [],
             "prices": [],
+            "volumes": [],
+            "highs": [],
+            "lows": [],
             "error": str(e)
         }
 
 # ------------------------------
-# Finnhub Fetch (Enhanced)
+# UPGRADE 2: Multi-Year Financial Data for RAG
+# ------------------------------
+@st.cache_data(ttl=7200)  # Cache for 2 hours
+def get_multi_year_financial_data(symbol: str):
+    """
+    Fetch multi-year financial data for RAG system
+    Returns comprehensive historical financial metrics
+    """
+    try:
+        ticker = yf.Ticker(symbol)
+        
+        # Get financial statements
+        financials = ticker.financials
+        balance_sheet = ticker.balance_sheet
+        cashflow = ticker.cashflow
+        
+        # Get key statistics and info
+        info = ticker.info
+        
+        # Process data into time series
+        financial_timeline = {}
+        
+        if not financials.empty:
+            # Revenue data
+            if 'Total Revenue' in financials.index:
+                revenues = financials.loc['Total Revenue'].dropna()
+                financial_timeline['revenue'] = {
+                    'dates': revenues.index.strftime('%Y').tolist(),
+                    'values': revenues.tolist()
+                }
+            
+            # Net Income data
+            if 'Net Income' in financials.index:
+                net_income = financials.loc['Net Income'].dropna()
+                financial_timeline['net_income'] = {
+                    'dates': net_income.index.strftime('%Y').tolist(),
+                    'values': net_income.tolist()
+                }
+            
+            # Gross Profit
+            if 'Gross Profit' in financials.index:
+                gross_profit = financials.loc['Gross Profit'].dropna()
+                financial_timeline['gross_profit'] = {
+                    'dates': gross_profit.index.strftime('%Y').tolist(),
+                    'values': gross_profit.tolist()
+                }
+        
+        # Balance sheet data
+        if not balance_sheet.empty:
+            # Total Assets
+            if 'Total Assets' in balance_sheet.index:
+                assets = balance_sheet.loc['Total Assets'].dropna()
+                financial_timeline['total_assets'] = {
+                    'dates': assets.index.strftime('%Y').tolist(),
+                    'values': assets.tolist()
+                }
+            
+            # Total Debt
+            if 'Total Debt' in balance_sheet.index:
+                debt = balance_sheet.loc['Total Debt'].dropna()
+                financial_timeline['total_debt'] = {
+                    'dates': debt.index.strftime('%Y').tolist(),
+                    'values': debt.tolist()
+                }
+        
+        # Add key ratios over time
+        ratios_timeline = calculate_historical_ratios(financial_timeline)
+        
+        return {
+            "financial_data": financial_timeline,
+            "ratios_timeline": ratios_timeline,
+            "company_info": info,
+            "error": None
+        }
+        
+    except Exception as e:
+        return {
+            "financial_data": {},
+            "ratios_timeline": {},
+            "company_info": {},
+            "error": str(e)
+        }
+
+def calculate_historical_ratios(financial_data):
+    """Calculate historical financial ratios for trend analysis"""
+    ratios = {}
+    
+    try:
+        # Revenue Growth Rate
+        if 'revenue' in financial_data:
+            revenue_data = financial_data['revenue']
+            if len(revenue_data['values']) > 1:
+                growth_rates = []
+                for i in range(1, len(revenue_data['values'])):
+                    prev = revenue_data['values'][i-1]
+                    curr = revenue_data['values'][i]
+                    if prev != 0:
+                        growth = ((curr - prev) / prev) * 100
+                        growth_rates.append(growth)
+                
+                if growth_rates:
+                    ratios['revenue_growth'] = {
+                        'dates': revenue_data['dates'][1:],
+                        'values': growth_rates
+                    }
+        
+        # Profit Margin Trend
+        if 'revenue' in financial_data and 'net_income' in financial_data:
+            rev_data = financial_data['revenue']
+            income_data = financial_data['net_income']
+            
+            # Match dates
+            common_dates = set(rev_data['dates']).intersection(set(income_data['dates']))
+            if common_dates:
+                margins = []
+                dates = []
+                for date in sorted(common_dates):
+                    rev_idx = rev_data['dates'].index(date)
+                    inc_idx = income_data['dates'].index(date)
+                    
+                    revenue = rev_data['values'][rev_idx]
+                    income = income_data['values'][inc_idx]
+                    
+                    if revenue != 0:
+                        margin = (income / revenue) * 100
+                        margins.append(margin)
+                        dates.append(date)
+                
+                if margins:
+                    ratios['profit_margin'] = {
+                        'dates': dates,
+                        'values': margins
+                    }
+        
+        return ratios
+        
+    except Exception as e:
+        return {}
+
+# ------------------------------
+# UPGRADE 3: Enhanced Finnhub with Yahoo Integration
 # ------------------------------
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def get_finnhub_company_data(symbol: str):
-    """Fetch company data from Finnhub API"""
+    """Fetch company data from Finnhub API with Yahoo Finance historical data"""
     
     base_url = "https://finnhub.io/api/v1"
     params = {"symbol": symbol, "token": FINNHUB_API_KEY}
@@ -163,7 +285,8 @@ def get_finnhub_company_data(symbol: str):
         "52WeekLow": "N/A",
         "description": "N/A",
         "metric": {},
-        "historical_prices": {}  # NEW: Add historical price data
+        "historical_prices": {},  # Yahoo Finance data
+        "multi_year_data": {}     # Multi-year financial data
     }
     
     try:
@@ -217,15 +340,26 @@ def get_finnhub_company_data(symbol: str):
                 "message": metrics_result.get("message")
             })
         
-        # 4. Historical Prices (NEW)
-        historical_data = get_historical_prices(symbol, days=30)
+        # 4. Yahoo Finance Historical Prices (UPGRADED)
+        historical_data = get_yahoo_historical_data(symbol, period="3mo")
         company_data["historical_prices"] = historical_data
         
         if historical_data.get("error"):
             errors.append({
-                "source": "Historical",
-                "code": "HIST_ERROR",
+                "source": "Yahoo Historical",
+                "code": "YAHOO_ERROR",
                 "message": historical_data["error"]
+            })
+        
+        # 5. Multi-Year Financial Data (NEW FOR RAG)
+        multi_year_data = get_multi_year_financial_data(symbol)
+        company_data["multi_year_data"] = multi_year_data
+        
+        if multi_year_data.get("error"):
+            errors.append({
+                "source": "Multi-Year Data",
+                "code": "MULTIYEAR_ERROR", 
+                "message": multi_year_data["error"]
             })
     
     except Exception as e:
@@ -234,7 +368,7 @@ def get_finnhub_company_data(symbol: str):
             "code": "EXCEPTION",
             "message": str(e)
         })
-        log_error(f"Finnhub fetch error: {str(e)}")
+        log_error(f"Data fetch error: {str(e)}")
     
     return {
         "data": company_data,
@@ -242,7 +376,7 @@ def get_finnhub_company_data(symbol: str):
     }
 
 # ------------------------------
-# SEC Fetch (Improved with Better Debugging)
+# SEC Fetch (Unchanged)
 # ------------------------------
 SEC_HEADERS = {
     "User-Agent": "FinancialDashboard/1.0 (student.research@university.edu)",
@@ -264,15 +398,11 @@ def get_sec_cik_mapping():
         if result["success"]:
             data = result["data"]
             if data and len(data) > 0:
-                # Success - log it
-                st.success(f"✅ SEC CIK mapping loaded: {len(data)} companies")
                 return data
             else:
-                # Empty response
                 st.warning("⚠️ SEC returned empty data")
                 return {}
         else:
-            # API call failed
             error_msg = result.get("message", "Unknown error")
             st.warning(f"⚠️ SEC CIK mapping failed: {error_msg}")
             return {}
@@ -299,20 +429,13 @@ def get_sec_filings(symbol: str, count: int = 5):
         cik = None
         symbol_upper = symbol.upper()
         
-        # Debug: Show what we're looking for (only in debug mode)
-        if st.session_state.get('debug_mode', False):
-            st.write(f"🔍 Looking for ticker: {symbol_upper}")
-        
         for key, item in cik_lookup.items():
             item_ticker = item.get("ticker", "").upper()
             if item_ticker == symbol_upper:
                 cik = str(item.get("cik_str", "")).zfill(10)
-                if st.session_state.get('debug_mode', False):
-                    st.write(f"✅ Found CIK: {cik} for {symbol_upper}")
                 break
         
         if not cik:
-            # Show some examples of what tickers are available
             example_tickers = []
             for key, item in list(cik_lookup.items())[:5]:
                 example_tickers.append(item.get("ticker", ""))
@@ -320,14 +443,11 @@ def get_sec_filings(symbol: str, count: int = 5):
             return {
                 "data": [],
                 "errors": [{"source": "SEC", "code": "CIK_NOT_FOUND", 
-                          "message": f"No CIK found for {symbol_upper}. Examples available: {', '.join(example_tickers)}"}]
+                          "message": f"No CIK found for {symbol_upper}"}]
             }
         
         # Step 3: Fetch filings for this CIK
         filings_url = f"https://data.sec.gov/submissions/CIK{cik}.json"
-        if st.session_state.get('debug_mode', False):
-            st.write(f"🔍 Fetching filings from: {filings_url}")
-        
         result = fetch_with_retry(filings_url, headers=SEC_HEADERS, timeout=20)
         
         if not result["success"]:
@@ -345,7 +465,7 @@ def get_sec_filings(symbol: str, count: int = 5):
             return {
                 "data": [],
                 "errors": [{"source": "SEC", "code": "NO_RECENT_FILINGS", 
-                          "message": "No recent filings found in response"}]
+                          "message": "No recent filings found"}]
             }
         
         # Step 5: Build filings list
@@ -353,9 +473,6 @@ def get_sec_filings(symbol: str, count: int = 5):
         forms = recent_filings.get("form", [])
         dates = recent_filings.get("filingDate", [])
         accessions = recent_filings.get("accessionNumber", [])
-        
-        if st.session_state.get('debug_mode', False):
-            st.write(f"✅ Found {len(forms)} filings")
         
         for i in range(min(count, len(forms))):
             if i < len(forms) and i < len(dates) and i < len(accessions):
@@ -378,7 +495,6 @@ def get_sec_filings(symbol: str, count: int = 5):
         
     except Exception as e:
         error_msg = f"SEC filings error: {str(e)}"
-        st.error(error_msg)
         return {
             "data": [],
             "errors": [{"source": "SEC", "code": "EXCEPTION", "message": error_msg}]

@@ -5,7 +5,11 @@ from .charts import (
     create_price_chart, 
     create_ratios_chart, 
     create_metrics_gauge_chart,
-    create_trend_chart
+    create_trend_chart,
+    create_candlestick_chart,
+    create_financial_trends_chart,
+    create_performance_comparison,
+    create_portfolio_summary
 )
 
 def init_streamlit():
@@ -17,133 +21,141 @@ def init_streamlit():
         initial_sidebar_state="expanded"
     )
     
-    # Custom CSS for professional styling
+    # Enhanced CSS for professional styling
     st.markdown("""
     <style>
     /* Main container styling */
     .main .block-container {
-        background-color: #f8fafc;
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
         color: #1a202c;
         padding: 2rem 3rem;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
-    /* Report card styling */
+    /* Report card styling with glassmorphism */
     .report-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
-        border-radius: 16px;
-        padding: 24px;
-        margin-bottom: 24px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        border: 1px solid #e2e8f0;
-        transition: all 0.3s ease;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        padding: 28px;
+        margin-bottom: 28px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .report-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.15);
     }
 
-    /* Typography */
+    /* Typography with enhanced styling */
     .card-title {
-        font-size: 24px;
+        font-size: 26px;
         font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin-bottom: 16px;
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 12px;
     }
 
     .card-subtitle {
         font-size: 16px;
         color: #718096;
-        margin-bottom: 16px;
+        margin-bottom: 20px;
         font-weight: 500;
     }
 
-    .metric-value {
-        font-size: 20px;
-        font-weight: 600;
-        color: #2d3748;
-    }
-
-    /* Main title styling */
+    /* Main title with animated gradient */
     .main-title {
-        font-size: 36px;
-        font-weight: 800;
-        color: #2d3748;
+        font-size: 42px;
+        font-weight: 900;
         text-align: center;
-        margin-bottom: 8px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        margin-bottom: 12px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        background-size: 200% 200%;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
+        animation: gradientShift 3s ease-in-out infinite;
+    }
+
+    @keyframes gradientShift {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
     }
 
     .sub-title {
-        font-size: 18px;
-        color: #718096;
+        font-size: 20px;
+        color: #4a5568;
         text-align: center;
-        margin-bottom: 32px;
+        margin-bottom: 40px;
         font-weight: 400;
     }
 
-    /* Button styling */
+    /* Enhanced button styling */
     .stButton > button {
         font-weight: 600;
-        border-radius: 12px;
+        border-radius: 15px;
         border: none;
-        padding: 12px 24px;
+        padding: 16px 32px;
         font-size: 16px;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
 
     .stButton > button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    /* Enhanced metrics styling */
+    [data-testid="metric-container"] {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        transition: transform 0.2s ease;
+    }
+
+    [data-testid="metric-container"]:hover {
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
     }
 
     /* Sidebar styling */
     .css-1d391kg {
-        background-color: #f7fafc;
+        background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+        color: white;
     }
 
-    /* Metrics styling */
-    [data-testid="metric-container"] {
-        background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%);
-        border: 1px solid #e2e8f0;
-        padding: 16px;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    /* Success/Error messages with better styling */
+    .stSuccess, .stError, .stInfo, .stWarning {
+        border-radius: 15px;
+        border: none;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
 
-    /* Success/Error message styling */
-    .stSuccess {
-        border-radius: 12px;
-        border-left: 4px solid #48bb78;
-    }
-
-    .stError {
-        border-radius: 12px;
-        border-left: 4px solid #f56565;
-    }
-
-    .stInfo {
-        border-radius: 12px;
-        border-left: 4px solid #4299e1;
-    }
-
-    .stWarning {
-        border-radius: 12px;
-        border-left: 4px solid #ed8936;
+    /* Chart container styling */
+    .chart-container {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        padding: 20px;
+        margin: 15px 0;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
     }
     </style>
     """, unsafe_allow_html=True)
 
-    # Main header
+    # Main header with enhanced styling
     st.markdown('<h1 class="main-title">📊 Financial + SEC Dashboard</h1>', unsafe_allow_html=True)
-    st.markdown('<p class="sub-title">Professional financial analysis with real-time data and AI insights</p>', unsafe_allow_html=True)
+    st.markdown('<p class="sub-title">Advanced financial analysis with historical data, RAG-powered insights, and predictive analytics</p>', unsafe_allow_html=True)
 
 def display_company_info(finnhub_data):
     """Display company information in a professional card"""
@@ -155,75 +167,97 @@ def display_company_info(finnhub_data):
     <div class="report-card">
         <div class="card-title">🏢 Company Overview</div>
         <div class="card-subtitle">{finnhub_data.get('name', 'N/A')} • {finnhub_data.get('sector', 'N/A')} • {finnhub_data.get('industry', 'N/A')}</div>
-        <p style="color: #4a5568; line-height: 1.6; margin: 0;">{finnhub_data.get('description', 'No description available.')}</p>
+        <p style="color: #4a5568; line-height: 1.8; margin: 0; font-size: 16px;">{finnhub_data.get('description', 'No description available.')}</p>
     </div>
     """, unsafe_allow_html=True)
 
 def display_financial_metrics(finnhub_data):
-    """Display key financial metrics in a grid layout with charts"""
+    """UPGRADED: Display financial metrics with advanced visualizations"""
     if not finnhub_data:
         st.warning("⚠️ No financial metrics available")
         return
         
     st.markdown("""
     <div class="report-card">
-        <div class="card-title">💹 Key Financial Metrics</div>
+        <div class="card-title">💹 Financial Metrics Dashboard</div>
     """, unsafe_allow_html=True)
 
-    # Create metrics grid
+    # Key Metrics Grid
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
         market_cap = finnhub_data.get('marketCap', 'N/A')
         if market_cap != 'N/A':
-            market_cap = format_currency(market_cap)
-        st.metric("Market Cap", market_cap)
+            market_cap_formatted = format_currency(market_cap)
+            market_cap_change = "↗️" if market_cap != 'N/A' else ""
+        else:
+            market_cap_formatted = "N/A"
+            market_cap_change = ""
+        st.metric("Market Cap", market_cap_formatted, delta=market_cap_change)
     
     with col2:
         current_price = finnhub_data.get('currentPrice', 'N/A')
         if current_price != 'N/A':
-            current_price = format_currency(current_price)
-        st.metric("Current Price", current_price)
+            price_formatted = format_currency(current_price)
+        else:
+            price_formatted = "N/A"
+        st.metric("Current Price", price_formatted)
     
     with col3:
         week_high = finnhub_data.get('52WeekHigh', 'N/A')
         if week_high != 'N/A':
-            week_high = format_currency(week_high)
-        st.metric("52W High", week_high)
+            high_formatted = format_currency(week_high)
+        else:
+            high_formatted = "N/A"
+        st.metric("52W High", high_formatted)
     
     with col4:
         week_low = finnhub_data.get('52WeekLow', 'N/A')
         if week_low != 'N/A':
-            week_low = format_currency(week_low)
-        st.metric("52W Low", week_low)
+            low_formatted = format_currency(week_low)
+        else:
+            low_formatted = "N/A"
+        st.metric("52W Low", low_formatted)
     
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # Add Historical Price Chart
+    # UPGRADE 1: Enhanced Price Charts
     historical_data = finnhub_data.get('historical_prices', {})
     if historical_data and historical_data.get('dates') and len(historical_data['dates']) > 0:
+        
+        # Chart type selector
+        chart_cols = st.columns([1, 1, 2])
+        with chart_cols[0]:
+            chart_type = st.selectbox("Chart Type", ["Line + Volume", "Candlestick"], key="price_chart_type")
+        
         st.markdown("""
         <div class="report-card">
-            <div class="card-title">📈 Stock Price Chart (30 Days)</div>
+            <div class="card-title">📈 Interactive Price Analysis</div>
         """, unsafe_allow_html=True)
         
-        price_chart = create_price_chart(
-            historical_data, 
-            finnhub_data.get('name', 'Company'),
-            'TICKER'  # We'll fix this later when we pass ticker properly
-        )
+        if chart_type == "Line + Volume":
+            price_chart = create_price_chart(
+                historical_data, 
+                finnhub_data.get('name', 'Company'),
+                'TICKER'
+            )
+        else:
+            price_chart = create_candlestick_chart(
+                historical_data,
+                finnhub_data.get('name', 'Company'),
+                'TICKER'
+            )
         
         if price_chart:
             st.plotly_chart(price_chart, use_container_width=True)
-            # Show data source info
-            if historical_data.get('is_mock'):
-                st.info("📊 Using demo data (Finnhub free tier limitation)")
+            if historical_data.get('source'):
+                st.info(f"📊 Data source: {historical_data['source']}")
         else:
             st.info("📊 Price chart data not available")
             
         st.markdown("</div>", unsafe_allow_html=True)
     
-    # Add Price Range Gauge
+    # UPGRADE 2: Price Position Gauge
     current_price = finnhub_data.get('currentPrice', 'N/A')
     week_high = finnhub_data.get('52WeekHigh', 'N/A')
     week_low = finnhub_data.get('52WeekLow', 'N/A')
@@ -231,12 +265,11 @@ def display_financial_metrics(finnhub_data):
     if all(x != 'N/A' for x in [current_price, week_high, week_low]):
         st.markdown("""
         <div class="report-card">
-            <div class="card-title">🎯 Price Position</div>
+            <div class="card-title">🎯 Price Position Analysis</div>
         """, unsafe_allow_html=True)
         
         gauge_chart = create_metrics_gauge_chart(
-            current_price, week_high, week_low, 
-            finnhub_data.get('symbol', 'TICKER')
+            current_price, week_high, week_low, 'TICKER'
         )
         
         if gauge_chart:
@@ -245,7 +278,7 @@ def display_financial_metrics(finnhub_data):
         st.markdown("</div>", unsafe_allow_html=True)
 
 def display_ratios(finnhub_data):
-    """Display financial ratios in a professional layout"""
+    """UPGRADED: Enhanced ratios display with advanced charts"""
     if not finnhub_data:
         st.warning("⚠️ No ratio data available")
         return
@@ -257,35 +290,46 @@ def display_ratios(finnhub_data):
 
     st.markdown("""
     <div class="report-card">
-        <div class="card-title">📊 Financial Ratios</div>
-        <div class="card-subtitle">Key performance indicators and valuation metrics</div>
+        <div class="card-title">📊 Financial Ratios Analysis</div>
+        <div class="card-subtitle">Key performance indicators with industry benchmarking</div>
     """, unsafe_allow_html=True)
 
-    # Display ratios in a 4-column grid
+    # Ratios metrics grid
+    col1, col2, col3, col4 = st.columns(4)
     ratio_keys = list(ratios.keys())
-    cols = st.columns(4)
     
-    for i, key in enumerate(ratio_keys):
-        col = cols[i % 4]
+    for i, key in enumerate(ratio_keys[:8]):  # Show up to 8 ratios
+        col = [col1, col2, col3, col4][i % 4]
         value = ratios[key]
         
-        # Format value for display
-        if value != "N/A" and isinstance(value, (int, float)):
-            if "Ratio" in key or key in ["P/E Ratio", "Current Ratio", "Quick Ratio"]:
-                display_value = f"{value:.2f}"
-            elif "Margin" in key or key == "ROE":
-                display_value = f"{value:.2%}" if value else "N/A"
-            else:
-                display_value = f"{value:.2f}"
+        if value != "N/A" and isinstance(value, (int, float, str)):
+            try:
+                if isinstance(value, str) and '%' in value:
+                    display_value = value
+                else:
+                    display_value = f"{float(value):.2f}" if isinstance(value, (int, float)) else str(value)
+            except:
+                display_value = str(value)
         else:
-            display_value = str(value)
+            display_value = "N/A"
         
+        # Add color coding based on ratio health
+        if "Margin" in key or "ROE" in key:
+            delta_color = "normal" if display_value != "N/A" and float(display_value.replace('%', '')) > 15 else "inverse"
+        else:
+            delta_color = "normal"
+            
         col.metric(key, display_value)
+
+    # Enhanced Ratios Chart
+    ratios_chart = create_ratios_chart(ratios)
+    if ratios_chart:
+        st.plotly_chart(ratios_chart, use_container_width=True)
 
     st.markdown("</div>", unsafe_allow_html=True)
 
 def display_trend_summary(finnhub_data):
-    """Display trend analysis summary"""
+    """UPGRADED: Enhanced trend display with multi-year analysis"""
     if not finnhub_data:
         st.warning("⚠️ No trend data available")
         return
@@ -294,64 +338,79 @@ def display_trend_summary(finnhub_data):
     
     st.markdown(f"""
     <div class="report-card">
-        <div class="card-title">📈 Performance Trends</div>
-        <div class="card-subtitle">Year-over-year growth and profitability metrics</div>
-        <pre style="
-            font-size: 14px; 
-            line-height: 1.6; 
-            white-space: pre-wrap; 
-            background-color: #f7fafc; 
-            padding: 16px; 
-            border-radius: 8px; 
-            border: 1px solid #e2e8f0;
-            color: #4a5568;
-            margin: 0;
-        ">{summary}</pre>
-    </div>
+        <div class="card-title">📈 Performance Trends & Analysis</div>
+        <div class="card-subtitle">Year-over-year growth and profitability metrics with historical context</div>
     """, unsafe_allow_html=True)
+    
+    # Current period trends chart
+    trend_data = {
+        'Revenue Growth (YoY)': f"{finnhub_data.get('metric', {}).get('revenueGrowthTTMYoy', 0) * 100:.1f}%",
+        'Profit Margin': f"{finnhub_data.get('metric', {}).get('netProfitMarginAnnual', 0):.1f}%",
+        'ROE': f"{finnhub_data.get('metric', {}).get('roeAnnual', 0) * 100:.1f}%",
+        'ROA': f"{finnhub_data.get('metric', {}).get('roaAnnual', 0) * 100:.1f}%"
+    }
+    
+    trend_chart = create_trend_chart(trend_data)
+    if trend_chart:
+        st.plotly_chart(trend_chart, use_container_width=True)
+    
+    # Multi-year trends (if available)
+    multi_year_data = finnhub_data.get('multi_year_data', {})
+    if multi_year_data and multi_year_data.get('financial_data'):
+        st.markdown("### 📊 Multi-Year Financial Trends")
+        
+        financial_trends_chart = create_financial_trends_chart(multi_year_data)
+        if financial_trends_chart:
+            st.plotly_chart(financial_trends_chart, use_container_width=True)
+        
+        # Performance comparison
+        current_metrics = finnhub_data.get('metric', {})
+        comparison_chart = create_performance_comparison(current_metrics, multi_year_data)
+        if comparison_chart:
+            st.plotly_chart(comparison_chart, use_container_width=True)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
     
     return summary
 
 def display_sec_filings(sec_data):
-    """Display SEC filings information"""
+    """Enhanced SEC filings display"""
     if not sec_data:
         st.info("ℹ️ No SEC filings data available")
         return "No SEC filings available"
     
-    # Format filings summary
     sec_summary = ""
-    for filing in sec_data[:5]:  # Show max 5 filings
+    for filing in sec_data[:5]:
         form = filing.get('form', 'N/A')
         date = filing.get('date', 'N/A')
-        link = filing.get('link', '#')
         sec_summary += f"• **{form}** filed on {date}\n"
     
     st.markdown(f"""
     <div class="report-card">
         <div class="card-title">📄 Recent SEC Filings</div>
         <div class="card-subtitle">Latest regulatory filings and disclosures</div>
-        <div style="color: #4a5568; line-height: 1.8;">
+        <div style="color: #4a5568; line-height: 2.0; font-size: 16px;">
             {sec_summary if sec_summary else "No recent filings available"}
         </div>
     </div>
     """, unsafe_allow_html=True)
     
-    # Create expandable section with filing links
+    # Expandable filing links
     if sec_data:
-        with st.expander("🔗 View Filing Links"):
+        with st.expander("🔗 View Filing Documents", expanded=False):
             for filing in sec_data[:5]:
                 form = filing.get('form', 'N/A')
                 date = filing.get('date', 'N/A')
                 link = filing.get('link', '#')
                 if link != '#' and link != 'N/A':
-                    st.markdown(f"[{form} - {date}]({link})")
+                    st.markdown(f"📋 [{form} - {date}]({link})")
                 else:
-                    st.text(f"{form} - {date} (Link unavailable)")
+                    st.text(f"📋 {form} - {date} (Link unavailable)")
     
     return sec_summary
 
 def display_ai_insights(answer):
-    """Display AI analysis results"""
+    """Enhanced AI insights display"""
     if not answer:
         st.warning("⚠️ No AI insights available")
         return
@@ -359,18 +418,36 @@ def display_ai_insights(answer):
     st.markdown(f"""
     <div class="report-card">
         <div class="card-title">🤖 AI Financial Analysis</div>
-        <div class="card-subtitle">Professional insights generated by AI</div>
+        <div class="card-subtitle">Advanced insights powered by historical data and predictive analytics</div>
         <div style="
-            color: #4a5568; 
-            line-height: 1.7; 
+            color: #2d3748; 
+            line-height: 1.8; 
             font-size: 16px;
-            background-color: #f7fafc;
-            padding: 20px;
-            border-radius: 12px;
-            border-left: 4px solid #667eea;
-            margin-top: 16px;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+            padding: 24px;
+            border-radius: 15px;
+            border-left: 5px solid #667eea;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         ">
             {answer.replace('**', '<strong>').replace('**', '</strong>')}
         </div>
     </div>
     """, unsafe_allow_html=True)
+
+def display_portfolio_summary(finnhub_data):
+    """NEW: Executive-style portfolio summary"""
+    if not finnhub_data:
+        return
+    
+    st.markdown("""
+    <div class="report-card">
+        <div class="card-title">🎯 Executive Dashboard</div>
+        <div class="card-subtitle">Comprehensive performance overview</div>
+    """, unsafe_allow_html=True)
+    
+    portfolio_chart = create_portfolio_summary(finnhub_data)
+    if portfolio_chart:
+        st.plotly_chart(portfolio_chart, use_container_width=True)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
