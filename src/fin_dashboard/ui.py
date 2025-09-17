@@ -210,11 +210,14 @@ def display_financial_metrics(finnhub_data):
         price_chart = create_price_chart(
             historical_data, 
             finnhub_data.get('name', 'Company'),
-            finnhub_data.get('symbol', 'TICKER')
+            'TICKER'  # We'll fix this later when we pass ticker properly
         )
         
         if price_chart:
             st.plotly_chart(price_chart, use_container_width=True)
+            # Show data source info
+            if historical_data.get('is_mock'):
+                st.info("📊 Using demo data (Finnhub free tier limitation)")
         else:
             st.info("📊 Price chart data not available")
             

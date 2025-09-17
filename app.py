@@ -118,19 +118,35 @@ def debug_sec_api():
 init_streamlit()
 
 # ---------------------------
-# Sidebar controls + DEBUG
+# Sidebar controls + DEBUG DROPDOWN
 # ---------------------------
 st.sidebar.header("⚙️ Controls")
 
-# Add debug section
-st.sidebar.header("🔧 Debug Tools")
-if st.sidebar.button("Debug Finnhub API"):
-    debug_finnhub_api()
-    st.stop()
+# Debug dropdown
+debug_option = st.sidebar.selectbox(
+    "🔧 Debug Tools",
+    ["None", "Debug Finnhub API", "Debug SEC API", "Clear Cache"],
+    key="debug_selector"
+)
 
-if st.sidebar.button("Debug SEC API"):
-    debug_sec_api()  
+# Handle debug actions
+if debug_option == "Debug Finnhub API":
+    debug_finnhub_api()
+    if st.sidebar.button("🏠 Back to Main"):
+        st.rerun()
     st.stop()
+    
+elif debug_option == "Debug SEC API":
+    debug_sec_api()
+    if st.sidebar.button("🏠 Back to Main"):
+        st.rerun()
+    st.stop()
+    
+elif debug_option == "Clear Cache":
+    st.cache_data.clear()
+    st.sidebar.success("✅ Cache cleared!")
+    if st.sidebar.button("🏠 Back to Main"):
+        st.rerun()
 
 # Regular controls
 example_tickers = ["AAPL", "GOOGL", "MSFT", "TSLA", "AMZN"]
