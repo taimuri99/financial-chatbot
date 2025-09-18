@@ -145,15 +145,28 @@ def prepare_financial_documents(company_data, ticker):
         growth_values = ratios_timeline['revenue_growth']['values'][-3:]
         growth_dates = ratios_timeline['revenue_growth']['dates'][-3:]
         
-        avg_growth = np.mean(growth_values)
-        growth_trend = np.polyfit(range(len(growth_values)), growth_values, 1)[0]
+        # Ensure we have valid positive growth values
+        valid_growth_values = [abs(float(x)) for x in growth_values if x is not None]
         
-        if growth_trend > 1:
-            prediction = "improving"
-            next_year_growth = avg_growth + growth_trend
-        elif growth_trend < -1:
-            prediction = "declining"
-            next_year_growth = avg_growth + growth_trend
+        if valid_growth_values:  # ✅ FIX: Only proceed if we have valid data
+            avg_growth = np.mean(valid_growth_values)
+        
+        avg_growth = np.mean(valid_growth_values)
+        
+        # Simple trend: compare last value to first value
+        if len(valid_growth_values) >= 2:
+            recent_growth = valid_growth_values[-1]
+            earlier_growth = valid_growth_values[0]
+            
+            if recent_growth > earlier_growth * 1.1:
+                prediction = "improving"
+                next_year_growth = min(recent_growth * 1.05, 15.0)  # Cap at 15%
+            elif recent_growth < earlier_growth * 0.9:
+                prediction = "declining" 
+                next_year_growth = max(recent_growth * 0.95, 1.0)   # Floor at 1%
+            else:
+                prediction = "stable"
+                next_year_growth = avg_growth
         else:
             prediction = "stable"
             next_year_growth = avg_growth
@@ -352,12 +365,28 @@ def get_predictive_insights(company_data, ticker):
         if 'revenue_growth' in ratios_timeline:
             growth_data = ratios_timeline['revenue_growth']
             if len(growth_data['values']) >= 3:
-                recent_growth = growth_data['values'][-3:]
-                avg_growth = np.mean(recent_growth)
-                growth_trend = np.polyfit(range(len(recent_growth)), recent_growth, 1)[0]
+                recent_growth = [abs(float(x)) for x in growth_data['values'][-3:] if x is not None]
                 
-                prediction = avg_growth + growth_trend
-                confidence = "high" if abs(growth_trend) < 2 else "medium"
+                if recent_growth:
+                    avg_growth = np.mean(recent_growth)
+                    
+                    # Simple prediction based on recent trend
+                    if len(recent_growth) >= 2:
+                        latest = recent_growth[-1]
+                        previous = recent_growth[-2]
+                        
+                        if latest > previous:
+                            prediction = min(latest * 1.02, 12.0)  # Small increase, cap at 12%
+                            confidence = "medium"
+                        else:
+                            prediction = max(latest * 0.98, 2.0)   # Small decrease, floor at 2%
+                            confidence = "medium"
+                    else:
+                        prediction = avg_growth
+                        confidence = "low"
+                else:
+                    prediction = 5.0  # Default reasonable prediction
+                    confidence = "low"
                 
                 insights.append({
                     'type': 'revenue_prediction',

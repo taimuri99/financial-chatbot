@@ -410,10 +410,31 @@ def display_sec_filings(sec_data):
     return sec_summary
 
 def display_ai_insights(answer):
-    """Enhanced AI insights display"""
+    """Enhanced AI insights display with proper formatting"""
     if not answer:
         st.warning("⚠️ No AI insights available")
         return
+    
+    # Clean and format the text
+    import re
+    formatted_answer = str(answer)
+    
+    # Fix markdown bold formatting
+    formatted_answer = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted_answer)
+    
+    # Fix line breaks and paragraphs
+    formatted_answer = formatted_answer.replace('\n\n', '</p><p>')
+    formatted_answer = formatted_answer.replace('\n', '<br>')
+    
+    # Fix bullet points
+    formatted_answer = re.sub(r'^[\s]*[-•*]\s*', '• ', formatted_answer, flags=re.MULTILINE)
+    
+    # Fix numbered lists
+    formatted_answer = re.sub(r'^[\s]*(\d+)\.[\s]*', r'\1. ', formatted_answer, flags=re.MULTILINE)
+    
+    # Wrap in paragraphs if not already
+    if not formatted_answer.startswith('<p>'):
+        formatted_answer = f'<p>{formatted_answer}</p>'
     
     st.markdown(f"""
     <div class="report-card">
@@ -430,7 +451,7 @@ def display_ai_insights(answer):
             margin-top: 20px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
         ">
-            {answer.replace('**', '<strong>').replace('**', '</strong>')}
+            {formatted_answer}
         </div>
     </div>
     """, unsafe_allow_html=True)

@@ -395,7 +395,20 @@ if rag_analysis:
             st.success("✅ RAG-enhanced analysis complete!")
             
             # Special display for RAG analysis
-            st.markdown("""
+            import re
+            rag_formatted = str(st.session_state.analysis_data)
+
+            # Proper text formatting
+            rag_formatted = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', rag_formatted)
+            rag_formatted = rag_formatted.replace('\n\n', '</p><p>')
+            rag_formatted = rag_formatted.replace('\n', '<br>')
+            rag_formatted = re.sub(r'^[\s]*[-•*]\s*', '• ', rag_formatted, flags=re.MULTILINE)
+
+            # Wrap in paragraphs
+            if not rag_formatted.startswith('<p>'):
+                rag_formatted = f'<p>{rag_formatted}</p>'
+
+            st.markdown(f"""
             <div class="report-card" style="
                 background: linear-gradient(135deg, rgba(56, 178, 172, 0.1) 0%, rgba(72, 187, 120, 0.1) 100%);
                 border-left: 5px solid #38b2ac;
@@ -412,7 +425,7 @@ if rag_analysis:
                     margin-top: 20px;
                     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
                 ">
-            """ + st.session_state.analysis_data.replace('**', '<strong>').replace('**', '</strong>') + """
+                    {rag_formatted}
                 </div>
             </div>
             """, unsafe_allow_html=True)
