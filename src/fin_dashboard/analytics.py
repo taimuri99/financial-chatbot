@@ -93,64 +93,48 @@ def compute_ratios(finnhub_data):
     return ratios
 
 def summarize_trends(finnhub_data):
-    """
-    Generate a comprehensive textual trend summary for display and AI analysis.
-    Returns formatted string with key growth and performance metrics.
-    """
+    """Generate trend summary with corrected growth calculations"""
     if not finnhub_data:
         return "No trend data available."
     
     try:
         metrics = finnhub_data.get("metric", {})
-        
-        # Extract key trend metrics
-        revenue_growth = metrics.get("revenueGrowthTTMYoy")
-        profit_margin = metrics.get("netProfitMarginAnnual")
-        eps_growth = metrics.get("epsGrowthTTMYoy")
-        roa = metrics.get("roaAnnual")
-        
-        # Build summary with proper formatting
         summary_lines = []
         
-        # Revenue Growth
+        # Revenue Growth (already in decimal form from Finnhub)
+        revenue_growth = metrics.get("revenueGrowthTTMYoy")
         if revenue_growth is not None:
-            summary_lines.append(f"Revenue Growth (YoY): {format_percent(revenue_growth)}")
+            # Finnhub gives this as decimal (0.05 = 5%), multiply by 100
+            summary_lines.append(f"Revenue Growth (YoY): {revenue_growth * 100:.1f}%")
         else:
             summary_lines.append("Revenue Growth (YoY): N/A")
         
-        # Profit Margin  
+        # Other metrics are already in percentage format
+        profit_margin = metrics.get("netProfitMarginAnnual")
         if profit_margin is not None:
-            summary_lines.append(f"Net Profit Margin: {format_percent(profit_margin)}")
+            summary_lines.append(f"Net Profit Margin: {profit_margin:.1f}%")
         else:
             summary_lines.append("Net Profit Margin: N/A")
         
-        # EPS Growth
+        eps_growth = metrics.get("epsGrowthTTMYoy")
         if eps_growth is not None:
-            summary_lines.append(f"EPS Growth (YoY): {format_percent(eps_growth)}")
+            # This is also decimal, multiply by 100
+            summary_lines.append(f"EPS Growth (YoY): {eps_growth * 100:.1f}%")
         else:
             summary_lines.append("EPS Growth (YoY): N/A")
         
-        # Return on Assets
+        roa = metrics.get("roaAnnual")
         if roa is not None:
-            summary_lines.append(f"Return on Assets: {format_percent(roa)}")
+            # This is also decimal, multiply by 100
+            summary_lines.append(f"Return on Assets: {roa * 100:.1f}%")
         else:
             summary_lines.append("Return on Assets: N/A")
-        
-        # Additional metrics if available
-        operating_margin = metrics.get("operatingMarginAnnual")
-        if operating_margin is not None:
-            summary_lines.append(f"Operating Margin: {format_percent(operating_margin)}")
-        
-        asset_turnover = metrics.get("assetTurnoverAnnual")
-        if asset_turnover is not None:
-            summary_lines.append(f"Asset Turnover: {format_ratio(asset_turnover)}")
         
         return "\n".join(summary_lines)
         
     except Exception as e:
-        print(f"Error generating trend summary: {e}")
-        return "Error generating trend summary. Please try again."
-
+        return f"Error generating trend summary: {str(e)}"
+    
 def get_financial_health_score(finnhub_data):
     """
     Calculate a simple financial health score based on key metrics.

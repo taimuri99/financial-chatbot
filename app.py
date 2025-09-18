@@ -280,8 +280,14 @@ if view_reports:
 # ---------------------------
 if ai_analysis:
     if not st.session_state.finnhub_data:
-        st.warning("⚠️ Please fetch company data first using 'View Reports' button")
-        st.stop()
+        st.info("🔍 Fetching company data for AI analysis...")
+        with st.spinner(f"Loading data for {ticker.upper()}..."):
+            finnhub_result = get_finnhub_company_data(ticker.upper())
+            sec_result = get_sec_filings(ticker.upper(), count=5)
+            
+            st.session_state.finnhub_data = finnhub_result.get("data", {})
+            st.session_state.sec_data = sec_result.get("data", [])
+            st.session_state.ticker_symbol = ticker.upper()
     
     try:
         query = st.session_state.get("ai_query", "Provide a comprehensive financial analysis.")
@@ -314,8 +320,14 @@ if ai_analysis:
 # ---------------------------
 if rag_analysis:
     if not st.session_state.finnhub_data:
-        st.warning("⚠️ Please fetch company data first using 'View Reports' button")
-        st.stop()
+        st.info("🔍 Fetching company data for RAG analysis...")
+        with st.spinner(f"Loading data for {ticker.upper()}..."):
+            finnhub_result = get_finnhub_company_data(ticker.upper())
+            sec_result = get_sec_filings(ticker.upper(), count=5)
+            
+            st.session_state.finnhub_data = finnhub_result.get("data", {})
+            st.session_state.sec_data = sec_result.get("data", [])
+            st.session_state.ticker_symbol = ticker.upper()
     
     # Check if multi-year data is available
     multi_year_data = st.session_state.finnhub_data.get('multi_year_data', {})
@@ -419,8 +431,8 @@ if rag_analysis:
 if not view_reports and not ai_analysis and not rag_analysis:
     # Welcome message with feature highlights 
     st.markdown('<div class="report-card">', unsafe_allow_html=True)
-    st.markdown('<div class="card-title">🎯 Welcome to Advanced Financial Analysis Platform</div>', unsafe_allow_html=True)
-    st.markdown('<div class="card-subtitle">Professional-grade financial insights with AI and predictive analytics</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card-title">🎯 Welcome to the Financial Analysis Platform</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card-subtitle">Financial insights with AI and predictive analytics</div>', unsafe_allow_html=True)
 
     # Create three columns for the feature cards
     col1, col2, col3 = st.columns(3)

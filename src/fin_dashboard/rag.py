@@ -170,8 +170,45 @@ def prepare_financial_documents(company_data, ticker):
             'confidence': 'medium',
             'ticker': ticker
         })
+
+    # Add this at the end of prepare_financial_documents function, before return:
+
+    # 7. Current vs Historical Comparison Documents
+    current_metrics = company_data.get('metric', {})
+    if current_metrics and financial_data:
+        current_margin = current_metrics.get('netProfitMarginAnnual', 0)
+        current_roe = current_metrics.get('roeAnnual', 0)
+        
+        # Compare with historical averages
+        if 'profit_margin' in ratios_timeline:
+            hist_margins = ratios_timeline['profit_margin']['values']
+            if hist_margins:
+                avg_hist_margin = sum(hist_margins) / len(hist_margins)
+                comparison = "improved" if current_margin > avg_hist_margin else "declined"
+                doc = f"{ticker} current profit margin of {current_margin:.1f}% has {comparison} compared to historical average of {avg_hist_margin:.1f}%."
+                documents.append(doc)
+                metadata.append({'type': 'comparison', 'metric': 'profit_margin', 'ticker': ticker})
+
+    # 8. Financial Stability Documents  
+    if 'revenue' in financial_data and len(financial_data['revenue']['values']) >= 2:
+        revenues = financial_data['revenue']['values']
+        revenue_stability = max(revenues) / min(revenues) if min(revenues) > 0 else 1
+        
+        if revenue_stability < 1.5:
+            stability_desc = "highly stable"
+        elif revenue_stability < 2.0:
+            stability_desc = "moderately stable"
+        else:
+            stability_desc = "volatile"
+        
+        doc = f"{ticker} shows {stability_desc} revenue patterns with a range factor of {revenue_stability:.1f}x over the analyzed period."
+        documents.append(doc)
+        metadata.append({'type': 'stability', 'metric': 'revenue', 'ticker': ticker})
     
     return documents, metadata
+
+
+
 
 @st.cache_data(ttl=3600, show_spinner=False)
 def create_simple_rag_store(company_data, ticker):
@@ -215,7 +252,8 @@ def query_simple_rag(vectorizer, documents, metadata, query, top_k=3):
         top_indices = similarities.argsort()[-top_k:][::-1]
         
         return {
-            'documents': [documents[i] for i in top_indices if similarities[i] > 0.1],
+            # lower threshold:
+            'documents': [documents[i] for i in top_indices if similarities[i] > 0.05],
             'metadatas': [metadata[i] for i in top_indices if similarities[i] > 0.1],
             'scores': [similarities[i] for i in top_indices if similarities[i] > 0.1]
         }
