@@ -101,15 +101,14 @@ def summarize_trends(finnhub_data):
         metrics = finnhub_data.get("metric", {})
         summary_lines = []
         
-        # Revenue Growth (already in decimal form from Finnhub)
+        # Revenue Growth
         revenue_growth = metrics.get("revenueGrowthTTMYoy")
         if revenue_growth is not None:
-            # Finnhub gives this as decimal (0.05 = 5%), multiply by 100
-            summary_lines.append(f"Revenue Growth (YoY): {revenue_growth * 100:.1f}%")
+            summary_lines.append(f"Revenue Growth (YoY): {revenue_growth:.1f}%")
         else:
             summary_lines.append("Revenue Growth (YoY): N/A")
         
-        # Other metrics are already in percentage format
+        # Other metrics
         profit_margin = metrics.get("netProfitMarginAnnual")
         if profit_margin is not None:
             summary_lines.append(f"Net Profit Margin: {profit_margin:.1f}%")
@@ -118,15 +117,13 @@ def summarize_trends(finnhub_data):
         
         eps_growth = metrics.get("epsGrowthTTMYoy")
         if eps_growth is not None:
-            # This is also decimal, multiply by 100
-            summary_lines.append(f"EPS Growth (YoY): {eps_growth * 100:.1f}%")
+            summary_lines.append(f"EPS Growth (YoY): {eps_growth:.1f}%")
         else:
             summary_lines.append("EPS Growth (YoY): N/A")
         
         roa = metrics.get("roaAnnual")
         if roa is not None:
-            # This is also decimal, multiply by 100
-            summary_lines.append(f"Return on Assets: {roa * 100:.1f}%")
+            summary_lines.append(f"Return on Assets: {roa:.1f}%")
         else:
             summary_lines.append("Return on Assets: N/A")
         
