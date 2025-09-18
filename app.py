@@ -417,64 +417,54 @@ if rag_analysis:
 # Enhanced Welcome Screen
 # ---------------------------
 if not view_reports and not ai_analysis and not rag_analysis:
-    # Welcome message with feature highlights
-    st.markdown("""
-    <div class="report-card">
-        <div class="card-title">🎯 Welcome to Advanced Financial Analysis Platform</div>
-        <div class="card-subtitle">Professional-grade financial insights with AI and predictive analytics</div>
-        
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; margin-top: 28px;">
-            <div style="
-                text-align: center; 
-                padding: 24px; 
-                background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 100%); 
-                border-radius: 15px;
-                border: 2px solid rgba(66, 153, 225, 0.2);
-                transition: transform 0.2s ease;
-            ">
-                <h3 style="color: #2b6cb0; margin-bottom: 12px;">📊 View Reports</h3>
-                <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 0;">
-                    • Interactive price & volume charts<br>
-                    • Multi-year financial trends<br>
-                    • Professional ratio analysis<br>
-                    • Predictive insights
-                </p>
-            </div>
-            <div style="
-                text-align: center; 
-                padding: 24px; 
-                background: linear-gradient(135deg, #f0fff4 0%, #f7fafc 100%); 
-                border-radius: 15px;
-                border: 2px solid rgba(56, 161, 105, 0.2);
-                transition: transform 0.2s ease;
-            ">
-                <h3 style="color: #38a169; margin-bottom: 12px;">🤖 AI Analysis</h3>
-                <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 0;">
-                    • Gemini-powered insights<br>
-                    • Current financial analysis<br>
-                    • Custom query responses<br>
-                    • Professional recommendations
-                </p>
-            </div>
-            <div style="
-                text-align: center; 
-                padding: 24px; 
-                background: linear-gradient(135deg, #fef5e7 0%, #fff5f0 100%); 
-                border-radius: 15px;
-                border: 2px solid rgba(221, 107, 32, 0.2);
-                transition: transform 0.2s ease;
-            ">
-                <h3 style="color: #dd6b20; margin-bottom: 12px;">🧠 RAG Analysis</h3>
-                <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 0;">
-                    • Historical context retrieval<br>
-                    • Multi-year trend analysis<br>
-                    • Pattern recognition<br>
-                    • Predictive modeling
-                </p>
-            </div>
+    # Welcome message with feature highlights 
+    st.markdown('<div class="report-card">', unsafe_allow_html=True)
+    st.markdown('<div class="card-title">🎯 Welcome to Advanced Financial Analysis Platform</div>', unsafe_allow_html=True)
+    st.markdown('<div class="card-subtitle">Professional-grade financial insights with AI and predictive analytics</div>', unsafe_allow_html=True)
+
+    # Create three columns for the feature cards
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        st.markdown("""
+        <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, #e6f3ff 0%, #f0f8ff 100%); border-radius: 15px; border: 2px solid rgba(66, 153, 225, 0.2); margin-bottom: 20px;">
+            <h3 style="color: #2b6cb0; margin-bottom: 12px;">📊 View Reports</h3>
+            <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 0;">
+                • Interactive price & volume charts<br>
+                • Multi-year financial trends<br>
+                • Professional ratio analysis<br>
+                • Predictive insights
+            </p>
         </div>
-    </div>
-    """, unsafe_allow_html=True)
+        """, unsafe_allow_html=True)
+
+    with col2:
+        st.markdown("""
+        <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, #f0fff4 0%, #f7fafc 100%); border-radius: 15px; border: 2px solid rgba(56, 161, 105, 0.2); margin-bottom: 20px;">
+            <h3 style="color: #38a169; margin-bottom: 12px;">🤖 AI Analysis</h3>
+            <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 0;">
+                • Gemini-powered insights<br>
+                • Current financial analysis<br>
+                • Custom query responses<br>
+                • Professional recommendations
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with col3:
+        st.markdown("""
+        <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, #fef5e7 0%, #fff5f0 100%); border-radius: 15px; border: 2px solid rgba(221, 107, 32, 0.2); margin-bottom: 20px;">
+            <h3 style="color: #dd6b20; margin-bottom: 12px;">🧠 RAG Analysis</h3>
+            <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 0;">
+                • Historical context retrieval<br>
+                • Multi-year trend analysis<br>
+                • Pattern recognition<br>
+                • Predictive modeling
+            </p>
+        </div>
+        """, unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Display previously loaded data if available
     if st.session_state.finnhub_data:
