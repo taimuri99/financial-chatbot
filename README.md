@@ -2,7 +2,10 @@
 
 ## Financial Analysis Platform
 
+---
+
 A **streamlined financial analysis platform** combining **real-time market data from Finnhub, Yahoo Finance, and SEC filings, and AI-powered insights**. 
+
 ---
 
 ## 🏗️ Architecture Overview
@@ -19,8 +22,6 @@ A **streamlined financial analysis platform** combining **real-time market data 
 - **Data Processing**: Pandas with smart caching
 - **Deployment**: Streamlit Cloud
 - **Debugging**: Data sourcing and storage
-
----
 
 ---
 
