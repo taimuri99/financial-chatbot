@@ -62,8 +62,8 @@ def create_price_chart(price_data, company_name, ticker):
         },
         template='plotly_white',
         hovermode='x unified',
-        height=550,
-        margin=dict(l=50, r=50, t=80, b=50),  # Increase top margin
+        height=500,
+        margin=dict(l=0, r=0, t=60, b=0),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         showlegend=True
@@ -80,62 +80,46 @@ def create_price_chart(price_data, company_name, ticker):
 # Candlestick Chart
 # ------------------------------
 def create_candlestick_chart(price_data, company_name, ticker):
-    """
-    Create candlestick chart for detailed price analysis
-    """
-    # Safety checks
-    if not price_data:
-        return None
-    if not price_data.get('dates'):
-        return None
-    if len(price_data.get('dates', [])) == 0:
+    if not price_data or not price_data.get('dates') or len(price_data['dates']) == 0:
         return None
     
-    # Check for required data
-    dates = price_data.get('dates', [])
-    highs = price_data.get('highs', [])
-    lows = price_data.get('lows', [])
-    closes = price_data.get('prices', [])
+    # Check for required OHLC data
+    required_fields = ['highs', 'lows', 'prices']
+    for field in required_fields:
+        if not price_data.get(field) or len(price_data[field]) == 0:
+            return None
     
-    if not all([dates, highs, lows, closes]):
+    dates = price_data['dates']
+    closes = price_data['prices']
+    highs = price_data['highs'] 
+    lows = price_data['lows']
+    opens = price_data.get('opens', closes)  # Use closes as opens if missing
+    
+    try:
+        fig = go.Figure(data=go.Candlestick(
+            x=dates,
+            open=opens,
+            high=highs,
+            low=lows,
+            close=closes,
+            name=ticker,
+            increasing_line_color='#26a69a',
+            decreasing_line_color='#ef5350'
+        ))
+        
+        fig.update_layout(
+            title=f'{company_name} ({ticker}) - Candlestick Chart',
+            template='plotly_white',
+            height=400,
+            xaxis_title='Date',
+            yaxis_title='Price ($)'
+        )
+        
         return None
-    
-    if not all([len(dates), len(highs), len(lows), len(closes)]):
+        
+    except Exception as e:
+        print(f"Candlestick error: {e}")
         return None
-    
-    # Use closes as opens if opens not available
-    opens = price_data.get('opens', closes)
-    
-    # Ensure all arrays are same length
-    min_len = min(len(dates), len(highs), len(lows), len(closes), len(opens))
-    if min_len == 0:
-        return None
-    
-    # Truncate all arrays to same length
-    dates = dates[:min_len]
-    opens = opens[:min_len]
-    highs = highs[:min_len]
-    lows = lows[:min_len]
-    closes = closes[:min_len]
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Candlestick(
-        x=dates,
-        open=opens,
-        high=highs,
-        low=lows,
-        close=closes,
-        name=ticker
-    ))
-    
-    fig.update_layout(
-        title=f'{company_name} ({ticker}) - Candlestick Chart',
-        template='plotly_white',
-        height=400
-    )
-    
-    return None
 
 # ------------------------------
 # Multi-Year Financial Trends
@@ -154,8 +138,8 @@ def create_financial_trends_chart(multi_year_data):
     fig = make_subplots(
         rows=2, cols=2,
         subplot_titles=('Revenue Trend', 'Net Income Trend', 'Revenue Growth %', 'Profit Margin %'),
-        vertical_spacing=0.15,
-        horizontal_spacing=0.12
+        vertical_spacing=0.12,
+        horizontal_spacing=0.1
     )
     
     # Revenue trend
@@ -238,9 +222,9 @@ def create_financial_trends_chart(multi_year_data):
             'font': {'size': 20, 'color': '#2d3748'}
         },
         template='plotly_white',
-        height=650,
+        height=600,
         showlegend=False,
-        margin=dict(l=50, r=50, t=100, b=50),
+        margin=dict(l=0, r=0, t=80, b=0),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
     )
@@ -325,9 +309,9 @@ def create_ratios_chart(ratios_data):
             'font': {'size': 18, 'color': '#2d3748'}
         },
         template='plotly_white',
-        height=450,
+        height=400,
         showlegend=False,
-        margin=dict(l=150, r=50, t=80, b=50),
+        margin=dict(l=120, r=0, t=60, b=20),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         xaxis=dict(gridcolor='#e2e8f0', linecolor='#cbd5e0'),
@@ -637,9 +621,9 @@ def create_portfolio_summary(company_data):
             'font': {'size': 20, 'color': '#2d3748'}
         },
         template='plotly_white',
-        height=550,
+        height=500,
         showlegend=False,
-        margin=dict(l=50, r=50, t=100, b=50),
+        margin=dict(l=0, r=0, t=80, b=0),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
     )
