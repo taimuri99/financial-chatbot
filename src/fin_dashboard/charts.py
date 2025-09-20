@@ -116,7 +116,7 @@ def create_candlestick_chart(price_data, company_name, ticker):
             yaxis_title='Price ($)'
         )
         
-        return fig
+        return None
         
     except Exception as e:
         print(f"Candlestick error: {e}")
