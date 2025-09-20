@@ -69,7 +69,7 @@ def fetch_with_retry(url, headers=None, params=None, retries=2, delay=1, timeout
     return {"success": False, **last_error}
 
 # ------------------------------
-# UPGRADE 1: Yahoo Finance Historical Data
+# Yahoo Finance Historical Data
 # ------------------------------
 @st.cache_data(ttl=3600)  # Cache for 1 hour
 def get_yahoo_historical_data(symbol: str, period: str = "1mo"):
@@ -93,6 +93,7 @@ def get_yahoo_historical_data(symbol: str, period: str = "1mo"):
                 "volumes": [],
                 "highs": [],
                 "lows": [],
+                "opens": [],  
                 "error": f"No data available for {symbol}"
             }
         
@@ -102,6 +103,7 @@ def get_yahoo_historical_data(symbol: str, period: str = "1mo"):
         volumes = hist_data['Volume'].tolist()
         highs = hist_data['High'].tolist()
         lows = hist_data['Low'].tolist()
+        opens = hist_data['Open'].tolist()  # Add this line
         
         return {
             "dates": dates,
@@ -109,6 +111,7 @@ def get_yahoo_historical_data(symbol: str, period: str = "1mo"):
             "volumes": volumes,
             "highs": highs,
             "lows": lows,
+            "opens": opens,     # Add this line
             "error": None,
             "source": "Yahoo Finance"
         }
@@ -124,7 +127,7 @@ def get_yahoo_historical_data(symbol: str, period: str = "1mo"):
         }
 
 # ------------------------------
-# UPGRADE 2: Multi-Year Financial Data for RAG
+# Multi-Year Financial Data for RAG
 # ------------------------------
 @st.cache_data(ttl=7200)  # Cache for 2 hours
 def get_multi_year_financial_data(symbol: str):
@@ -264,7 +267,7 @@ def calculate_historical_ratios(financial_data):
         return {}
 
 # ------------------------------
-# UPGRADE 3: Enhanced Finnhub with Yahoo Integration
+# Enhanced Finnhub with Yahoo Integration
 # ------------------------------
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def get_finnhub_company_data(symbol: str):
@@ -376,7 +379,7 @@ def get_finnhub_company_data(symbol: str):
     }
 
 # ------------------------------
-# SEC Fetch (Unchanged)
+# SEC Fetch
 # ------------------------------
 SEC_HEADERS = {
     "User-Agent": "FinancialDashboard/1.0 (student.research@university.edu)",

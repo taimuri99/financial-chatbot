@@ -227,7 +227,6 @@ def display_financial_metrics(finnhub_data):
     st.markdown("</div>", unsafe_allow_html=True)
     
     # Enhanced Price Charts
-    # UPGRADE 1: Enhanced Price Charts
     historical_data = finnhub_data.get('historical_prices', {})
     if historical_data and historical_data.get('dates') and len(historical_data['dates']) > 0:
         

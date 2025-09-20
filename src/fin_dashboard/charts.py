@@ -81,60 +81,45 @@ def create_price_chart(price_data, company_name, ticker):
 # Candlestick Chart
 # ------------------------------
 def create_candlestick_chart(price_data, company_name, ticker):
-    """
-    Create candlestick chart for detailed price analysis
-    """
     if not price_data or not price_data.get('dates') or len(price_data['dates']) == 0:
         return None
     
-    # Validate required OHLC data
+    # Check for required OHLC data
     required_fields = ['highs', 'lows', 'prices']
     for field in required_fields:
         if not price_data.get(field) or len(price_data[field]) == 0:
             return None
     
-    # Ensure all arrays have the same length
-    min_length = min(len(price_data['dates']), len(price_data['highs']), 
-                     len(price_data['lows']), len(price_data['prices']))
-    
-    if min_length == 0:
-        return None
+    dates = price_data['dates']
+    closes = price_data['prices']
+    highs = price_data['highs'] 
+    lows = price_data['lows']
+    opens = price_data.get('opens', closes)  # Use closes as opens if missing
     
     try:
         fig = go.Figure(data=go.Candlestick(
-            x=price_data['dates'][:min_length],
-            open=price_data.get('opens', price_data['prices'])[:min_length],  # Fallback to close if no open
-            high=price_data['highs'][:min_length],
-            low=price_data['lows'][:min_length],
-            close=price_data['prices'][:min_length],
-            name=f'{ticker}',
+            x=dates,
+            open=opens,
+            high=highs,
+            low=lows,
+            close=closes,
+            name=ticker,
             increasing_line_color='#26a69a',
             decreasing_line_color='#ef5350'
         ))
         
         fig.update_layout(
-            title={
-                'text': f'{company_name} ({ticker}) - Candlestick Chart',
-                'x': 0.5,
-                'xanchor': 'center',
-                'font': {'size': 18, 'color': '#2d3748'}
-            },
+            title=f'{company_name} ({ticker}) - Candlestick Chart',
             template='plotly_white',
             height=400,
             xaxis_title='Date',
-            yaxis_title='Price ($)',
-            margin=dict(l=0, r=0, t=60, b=0),
-            plot_bgcolor='rgba(0,0,0,0)',
-            paper_bgcolor='rgba(0,0,0,0)',
+            yaxis_title='Price ($)'
         )
-        
-        fig.update_xaxes(gridcolor='#e2e8f0', linecolor='#cbd5e0')
-        fig.update_yaxes(gridcolor='#e2e8f0', linecolor='#cbd5e0', tickformat='$,.2f')
         
         return fig
         
     except Exception as e:
-        print(f"Candlestick chart error: {e}")
+        print(f"Candlestick error: {e}")
         return None
 
 # ------------------------------
