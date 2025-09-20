@@ -514,7 +514,7 @@ def create_portfolio_summary(company_data):
         subplot_titles=('Market Position', 'Financial Health', 'Growth Metrics', 'Risk Indicators'),
         specs=[[{"type": "indicator"}, {"type": "bar"}],
                [{"type": "scatter"}, {"type": "bar"}]],
-        vertical_spacing=0.15,
+        vertical_spacing=0.25,
         horizontal_spacing=0.1
     )
     
@@ -534,7 +534,7 @@ def create_portfolio_summary(company_data):
                 go.Indicator(
                     mode="gauge+number",
                     value=position,
-                    title={"52-Week Position %"},
+                    title={'text': "52-Week Position %"},
                     gauge={
                         'axis': {'range': [0, 100]},
                         'bar': {'color': "#667eea"},
