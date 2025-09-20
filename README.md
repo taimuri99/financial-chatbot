@@ -4,6 +4,10 @@
 
 ---
 
+[Deployment](https://financial-chatbot-taimurahmadkhan.streamlit.app/)
+
+---
+
 A **streamlined financial analysis platform** combining **real-time market data from Finnhub, Yahoo Finance, and SEC filings, and AI-powered insights**. 
 
 ---
