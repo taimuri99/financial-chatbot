@@ -234,39 +234,70 @@ def display_financial_metrics(finnhub_data):
         chart_cols = st.columns([1, 1, 2])
         with chart_cols[0]:
             chart_type = st.selectbox("Chart Type", ["Line + Volume", "Candlestick"], key="price_chart_type")
-
+        
         st.markdown("""
         <div class="report-card">
             <div class="card-title">📈 Interactive Price Analysis</div>
         """, unsafe_allow_html=True)
-
-        if chart_type == "Line + Volume":
-            price_chart = create_price_chart(
-                historical_data, 
-                finnhub_data.get('name', 'Company'),
-                'TICKER'  # Pass actual ticker here
-            )
-            if price_chart:
-                st.plotly_chart(price_chart, use_container_width=True)
-        else:  # Candlestick
-            # Check if we have OHLC data for candlestick
-            if (historical_data.get('highs') and historical_data.get('lows') and 
-                len(historical_data['highs']) > 0 and len(historical_data['lows']) > 0):
-                price_chart = create_candlestick_chart(
-                    historical_data,
+        
+        try:
+            if chart_type == "Line + Volume":
+                price_chart = create_price_chart(
+                    historical_data, 
                     finnhub_data.get('name', 'Company'),
                     'TICKER'
                 )
                 if price_chart:
                     st.plotly_chart(price_chart, use_container_width=True)
                 else:
-                    st.info("📊 Candlestick chart requires OHLC data which is not available")
-            else:
-                st.info("📊 Candlestick chart requires high/low price data which is not available")
-
-        if historical_data.get('source'):
-            st.info(f"📊 Data source: {historical_data['source']}")
-
+                    st.warning("Unable to create line chart")
+            
+            else:  # Candlestick
+                # Check if we have required OHLC data
+                has_ohlc = (
+                    historical_data.get('highs') and 
+                    historical_data.get('lows') and 
+                    len(historical_data.get('highs', [])) > 0 and 
+                    len(historical_data.get('lows', [])) > 0
+                )
+                
+                if has_ohlc:
+                    price_chart = create_candlestick_chart(
+                        historical_data,
+                        finnhub_data.get('name', 'Company'),
+                        'TICKER'
+                    )
+                    if price_chart:
+                        st.plotly_chart(price_chart, use_container_width=True)
+                    else:
+                        st.warning("Unable to create candlestick chart")
+                        # Fallback to line chart
+                        price_chart = create_price_chart(
+                            historical_data, 
+                            finnhub_data.get('name', 'Company'),
+                            'TICKER'
+                        )
+                        if price_chart:
+                            st.plotly_chart(price_chart, use_container_width=True)
+                else:
+                    st.info("Candlestick chart requires high/low price data. Showing line chart instead.")
+                    # Fallback to line chart
+                    price_chart = create_price_chart(
+                        historical_data, 
+                        finnhub_data.get('name', 'Company'),
+                        'TICKER'
+                    )
+                    if price_chart:
+                        st.plotly_chart(price_chart, use_container_width=True)
+            
+            if historical_data.get('source'):
+                st.info(f"📊 Data source: {historical_data['source']}")
+                
+        except Exception as e:
+            st.error(f"Chart rendering error: {str(e)}")
+            # Always show something - fallback to basic info
+            st.info("Chart display temporarily unavailable. Please try refreshing.")
+        
         st.markdown("</div>", unsafe_allow_html=True)
     
     # Price Position Gauge
