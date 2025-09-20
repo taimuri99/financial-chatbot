@@ -503,7 +503,7 @@ def create_trend_chart(trend_data):
 def create_portfolio_summary(company_data):
     """
     Create a comprehensive portfolio-style summary visualization
-    NEW FEATURE: Executive dashboard style chart
+    Executive dashboard style chart
     """
     if not company_data:
         return None
@@ -534,7 +534,7 @@ def create_portfolio_summary(company_data):
                 go.Indicator(
                     mode="gauge+number",
                     value=position,
-                    title={'text': "52-Week Position %"},
+                    title={"52-Week Position %"},
                     gauge={
                         'axis': {'range': [0, 100]},
                         'bar': {'color': "#667eea"},
