@@ -80,46 +80,47 @@ def create_price_chart(price_data, company_name, ticker):
 # Candlestick Chart
 # ------------------------------
 def create_candlestick_chart(price_data, company_name, ticker):
-    if not price_data or not price_data.get('dates') or len(price_data['dates']) == 0:
+    """Create candlestick chart or fallback to line chart"""
+    if not price_data or not price_data.get('dates'):
         return None
     
-    # Check for required OHLC data
-    required_fields = ['highs', 'lows', 'prices']
-    for field in required_fields:
-        if not price_data.get(field) or len(price_data[field]) == 0:
-            return None
+    # Check if we have OHLC data
+    has_ohlc = all(key in price_data and price_data[key] for key in ['opens', 'highs', 'lows', 'prices'])
     
-    dates = price_data['dates']
-    closes = price_data['prices']
-    highs = price_data['highs'] 
-    lows = price_data['lows']
-    opens = price_data.get('opens', closes)  # Use closes as opens if missing
-    
-    try:
-        fig = go.Figure(data=go.Candlestick(
-            x=dates,
-            open=opens,
-            high=highs,
-            low=lows,
-            close=closes,
-            name=ticker,
-            increasing_line_color='#26a69a',
-            decreasing_line_color='#ef5350'
+    if not has_ohlc:
+        # Fallback: create a line chart that looks like candlestick
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=price_data['dates'],
+            y=price_data['prices'],
+            mode='lines',
+            name=f'{ticker} Price',
+            line=dict(color='#26a69a', width=2)
         ))
-        
         fig.update_layout(
-            title=f'{company_name} ({ticker}) - Candlestick Chart',
+            title=f'{company_name} ({ticker}) - Price Chart (Candlestick data unavailable)',
             template='plotly_white',
-            height=400,
-            xaxis_title='Date',
-            yaxis_title='Price ($)'
+            height=400
         )
-        
-        return None
-        
-    except Exception as e:
-        print(f"Candlestick error: {e}")
-        return None
+        return fig
+    
+    # Create actual candlestick chart
+    fig = go.Figure(data=go.Candlestick(
+        x=price_data['dates'],
+        open=price_data['opens'],
+        high=price_data['highs'],
+        low=price_data['lows'],
+        close=price_data['prices'],
+        name=ticker
+    ))
+    
+    fig.update_layout(
+        title=f'{company_name} ({ticker}) - Candlestick Chart',
+        template='plotly_white',
+        height=400
+    )
+    
+    return fig
 
 # ------------------------------
 # Multi-Year Financial Trends
