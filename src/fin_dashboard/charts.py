@@ -81,46 +81,62 @@ def create_price_chart(price_data, company_name, ticker):
 # Candlestick Chart
 # ------------------------------
 def create_candlestick_chart(price_data, company_name, ticker):
-    if not price_data or not price_data.get('dates') or len(price_data['dates']) == 0:
+    """
+    Create candlestick chart for detailed price analysis
+    """
+    # Safety checks
+    if not price_data:
+        return None
+    if not price_data.get('dates'):
+        return None
+    if len(price_data.get('dates', [])) == 0:
         return None
     
-    # Check for required OHLC data
-    required_fields = ['highs', 'lows', 'prices']
-    for field in required_fields:
-        if not price_data.get(field) or len(price_data[field]) == 0:
-            return None
+    # Check for required data
+    dates = price_data.get('dates', [])
+    highs = price_data.get('highs', [])
+    lows = price_data.get('lows', [])
+    closes = price_data.get('prices', [])
     
-    dates = price_data['dates']
-    closes = price_data['prices']
-    highs = price_data['highs'] 
-    lows = price_data['lows']
-    opens = price_data.get('opens', closes)  # Use closes as opens if missing
+    if not all([dates, highs, lows, closes]):
+        return None
     
-    try:
-        fig = go.Figure(data=go.Candlestick(
-            x=dates,
-            open=opens,
-            high=highs,
-            low=lows,
-            close=closes,
-            name=ticker,
-            increasing_line_color='#26a69a',
-            decreasing_line_color='#ef5350'
-        ))
-        
-        fig.update_layout(
-            title=f'{company_name} ({ticker}) - Candlestick Chart',
-            template='plotly_white',
-            height=400,
-            xaxis_title='Date',
-            yaxis_title='Price ($)'
-        )
-        
+    if not all([len(dates), len(highs), len(lows), len(closes)]):
         return None
-        
-    except Exception as e:
-        print(f"Candlestick error: {e}")
+    
+    # Use closes as opens if opens not available
+    opens = price_data.get('opens', closes)
+    
+    # Ensure all arrays are same length
+    min_len = min(len(dates), len(highs), len(lows), len(closes), len(opens))
+    if min_len == 0:
         return None
+    
+    # Truncate all arrays to same length
+    dates = dates[:min_len]
+    opens = opens[:min_len]
+    highs = highs[:min_len]
+    lows = lows[:min_len]
+    closes = closes[:min_len]
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Candlestick(
+        x=dates,
+        open=opens,
+        high=highs,
+        low=lows,
+        close=closes,
+        name=ticker
+    ))
+    
+    fig.update_layout(
+        title=f'{company_name} ({ticker}) - Candlestick Chart',
+        template='plotly_white',
+        height=400
+    )
+    
+    return fig
 
 # ------------------------------
 # Multi-Year Financial Trends

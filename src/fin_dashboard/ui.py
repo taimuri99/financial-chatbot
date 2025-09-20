@@ -422,10 +422,10 @@ def display_sec_filings(sec_data):
         return "No SEC filings available"
     
     sec_summary = ""
-    for filing in sec_data[:5]:
+    for filing in sec_data[:1]:
         form = filing.get('form', 'N/A')
         date = filing.get('date', 'N/A')
-        sec_summary += f"• **{form}** filed on {date}<br>"
+        sec_summary += f"• Form {form} filed on {date}<br>"
     
     st.markdown(f"""
     <div class="report-card">
