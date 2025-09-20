@@ -514,7 +514,7 @@ def create_portfolio_summary(company_data):
         subplot_titles=('Market Position', 'Financial Health', 'Growth Metrics', 'Risk Indicators'),
         specs=[[{"type": "indicator"}, {"type": "bar"}],
                [{"type": "scatter"}, {"type": "bar"}]],
-        vertical_spacing=0.25,
+        vertical_spacing=0.15,
         horizontal_spacing=0.1
     )
     
