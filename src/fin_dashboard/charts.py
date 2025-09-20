@@ -136,7 +136,7 @@ def create_candlestick_chart(price_data, company_name, ticker):
         height=400
     )
     
-    return fig
+    return None
 
 # ------------------------------
 # Multi-Year Financial Trends
