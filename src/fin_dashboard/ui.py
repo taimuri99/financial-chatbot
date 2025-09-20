@@ -227,6 +227,7 @@ def display_financial_metrics(finnhub_data):
     st.markdown("</div>", unsafe_allow_html=True)
     
     # Enhanced Price Charts
+    # UPGRADE 1: Enhanced Price Charts
     historical_data = finnhub_data.get('historical_prices', {})
     if historical_data and historical_data.get('dates') and len(historical_data['dates']) > 0:
         
@@ -235,13 +236,17 @@ def display_financial_metrics(finnhub_data):
         with chart_cols[0]:
             chart_type = st.selectbox("Chart Type", ["Line + Volume", "Candlestick"], key="price_chart_type")
         
+        # Always create the card container first
         st.markdown("""
         <div class="report-card">
             <div class="card-title">📈 Interactive Price Analysis</div>
         """, unsafe_allow_html=True)
         
-        try:
-            if chart_type == "Line + Volume":
+        # Chart rendering in isolated try-catch
+        chart_rendered = False
+        
+        if chart_type == "Line + Volume":
+            try:
                 price_chart = create_price_chart(
                     historical_data, 
                     finnhub_data.get('name', 'Company'),
@@ -249,39 +254,33 @@ def display_financial_metrics(finnhub_data):
                 )
                 if price_chart:
                     st.plotly_chart(price_chart, use_container_width=True)
-                else:
-                    st.warning("Unable to create line chart")
-            
-            else:  # Candlestick
-                # Check if we have required OHLC data
-                has_ohlc = (
-                    historical_data.get('highs') and 
-                    historical_data.get('lows') and 
-                    len(historical_data.get('highs', [])) > 0 and 
-                    len(historical_data.get('lows', [])) > 0
+                    chart_rendered = True
+            except Exception as e:
+                st.error(f"Line chart error: {str(e)}")
+        
+        else:  # Candlestick
+            try:
+                # Debug info
+                st.write("Debug: Attempting candlestick chart...")
+                st.write(f"Has highs: {bool(historical_data.get('highs'))}")
+                st.write(f"Has lows: {bool(historical_data.get('lows'))}")
+                
+                price_chart = create_candlestick_chart(
+                    historical_data,
+                    finnhub_data.get('name', 'Company'),
+                    'TICKER'
                 )
                 
-                if has_ohlc:
-                    price_chart = create_candlestick_chart(
-                        historical_data,
-                        finnhub_data.get('name', 'Company'),
-                        'TICKER'
-                    )
-                    if price_chart:
-                        st.plotly_chart(price_chart, use_container_width=True)
-                    else:
-                        st.warning("Unable to create candlestick chart")
-                        # Fallback to line chart
-                        price_chart = create_price_chart(
-                            historical_data, 
-                            finnhub_data.get('name', 'Company'),
-                            'TICKER'
-                        )
-                        if price_chart:
-                            st.plotly_chart(price_chart, use_container_width=True)
+                if price_chart:
+                    st.plotly_chart(price_chart, use_container_width=True)
+                    chart_rendered = True
                 else:
-                    st.info("Candlestick chart requires high/low price data. Showing line chart instead.")
-                    # Fallback to line chart
+                    st.warning("Candlestick chart returned None")
+                    
+            except Exception as e:
+                st.error(f"Candlestick error: {str(e)}")
+                # Show fallback
+                try:
                     price_chart = create_price_chart(
                         historical_data, 
                         finnhub_data.get('name', 'Company'),
@@ -289,14 +288,15 @@ def display_financial_metrics(finnhub_data):
                     )
                     if price_chart:
                         st.plotly_chart(price_chart, use_container_width=True)
-            
-            if historical_data.get('source'):
-                st.info(f"📊 Data source: {historical_data['source']}")
-                
-        except Exception as e:
-            st.error(f"Chart rendering error: {str(e)}")
-            # Always show something - fallback to basic info
-            st.info("Chart display temporarily unavailable. Please try refreshing.")
+                        chart_rendered = True
+                except Exception as fallback_e:
+                    st.error(f"Fallback chart also failed: {str(fallback_e)}")
+        
+        if not chart_rendered:
+            st.info("Chart could not be displayed. Please try the other chart type.")
+        
+        if historical_data.get('source'):
+            st.info(f"📊 Data source: {historical_data['source']}")
         
         st.markdown("</div>", unsafe_allow_html=True)
     
