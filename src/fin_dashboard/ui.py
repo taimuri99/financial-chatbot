@@ -440,7 +440,7 @@ def display_sec_filings(sec_data):
     # Expandable filing links
     if sec_data:
         with st.expander("🔗 View Filing Documents", expanded=False):
-            for filing in sec_data[:5]:
+            for filing in sec_data[:1]:
                 form = filing.get('form', 'N/A')
                 date = filing.get('date', 'N/A')
                 link = filing.get('link', '#')

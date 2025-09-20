@@ -63,8 +63,8 @@ def create_price_chart(price_data, company_name, ticker):
         },
         template='plotly_white',
         hovermode='x unified',
-        height=500,
-        margin=dict(l=0, r=0, t=60, b=0),
+        height=550,
+        margin=dict(l=50, r=50, t=80, b=50),  # Increase top margin
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         showlegend=True
@@ -155,8 +155,8 @@ def create_financial_trends_chart(multi_year_data):
     fig = make_subplots(
         rows=2, cols=2,
         subplot_titles=('Revenue Trend', 'Net Income Trend', 'Revenue Growth %', 'Profit Margin %'),
-        vertical_spacing=0.12,
-        horizontal_spacing=0.1
+        vertical_spacing=0.15,
+        horizontal_spacing=0.12
     )
     
     # Revenue trend
@@ -239,9 +239,9 @@ def create_financial_trends_chart(multi_year_data):
             'font': {'size': 20, 'color': '#2d3748'}
         },
         template='plotly_white',
-        height=600,
+        height=650,
         showlegend=False,
-        margin=dict(l=0, r=0, t=80, b=0),
+        margin=dict(l=50, r=50, t=100, b=50),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
     )
@@ -326,9 +326,9 @@ def create_ratios_chart(ratios_data):
             'font': {'size': 18, 'color': '#2d3748'}
         },
         template='plotly_white',
-        height=400,
+        height=450,
         showlegend=False,
-        margin=dict(l=120, r=0, t=60, b=20),
+        margin=dict(l=150, r=50, t=80, b=50),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
         xaxis=dict(gridcolor='#e2e8f0', linecolor='#cbd5e0'),
@@ -638,9 +638,9 @@ def create_portfolio_summary(company_data):
             'font': {'size': 20, 'color': '#2d3748'}
         },
         template='plotly_white',
-        height=500,
+        height=550,
         showlegend=False,
-        margin=dict(l=0, r=0, t=80, b=0),
+        margin=dict(l=50, r=50, t=100, b=50),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
     )
