@@ -1,6 +1,5 @@
 import streamlit as st
-from .utils import format_currency
-from .analytics import compute_ratios, summarize_trends
+from .analytics import compute_ratios, summarize_trends, format_currency
 from .charts import (
     create_price_chart, 
     create_ratios_chart, 

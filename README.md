@@ -2,7 +2,7 @@
 
 ## Financial Analysis Platform
 
-**Financial + SEC Dashboard** is a **streamlined financial analysis platform** combining **real-time market data from Finnhub, Yahoo Finance, and SEC filings, and AI-powered insights**. 
+A **streamlined financial analysis platform** combining **real-time market data from Finnhub, Yahoo Finance, and SEC filings, and AI-powered insights**. 
 ---
 
 ## 🏗️ Architecture Overview

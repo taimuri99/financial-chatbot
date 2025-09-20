@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import pandas as pd
 import numpy as np
 import streamlit as st
-from .utils import format_currency
 
 # ------------------------------
 # Price Charts with Volume
