@@ -163,11 +163,16 @@ def display_company_info(finnhub_data):
         st.warning("⚠️ No company information available")
         return
     
+    # Get description, handle cases where it might be empty or "N/A"
+    description = finnhub_data.get('description', '')
+    if not description or description == "N/A" or description.strip() == "":
+        description = "No company description available from data sources."
+    
     st.markdown(f"""
     <div class="report-card">
         <div class="card-title">🏢 Company Overview</div>
         <div class="card-subtitle">{finnhub_data.get('name', 'N/A')} • {finnhub_data.get('sector', 'N/A')} • {finnhub_data.get('industry', 'N/A')}</div>
-        <p style="color: #4a5568; line-height: 1.8; margin: 0; font-size: 16px;">{finnhub_data.get('description', 'No description available.')}</p>
+        <p style="color: #4a5568; line-height: 1.8; margin: 0; font-size: 16px;">{description}</p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -221,7 +226,7 @@ def display_financial_metrics(finnhub_data):
     
     st.markdown("</div>", unsafe_allow_html=True)
     
-    # UPGRADE 1: Enhanced Price Charts
+    # Enhanced Price Charts
     historical_data = finnhub_data.get('historical_prices', {})
     if historical_data and historical_data.get('dates') and len(historical_data['dates']) > 0:
         
@@ -229,35 +234,42 @@ def display_financial_metrics(finnhub_data):
         chart_cols = st.columns([1, 1, 2])
         with chart_cols[0]:
             chart_type = st.selectbox("Chart Type", ["Line + Volume", "Candlestick"], key="price_chart_type")
-        
+
         st.markdown("""
         <div class="report-card">
             <div class="card-title">📈 Interactive Price Analysis</div>
         """, unsafe_allow_html=True)
-        
+
         if chart_type == "Line + Volume":
             price_chart = create_price_chart(
                 historical_data, 
                 finnhub_data.get('name', 'Company'),
-                'TICKER'
+                'TICKER'  # Pass actual ticker here
             )
-        else:
-            price_chart = create_candlestick_chart(
-                historical_data,
-                finnhub_data.get('name', 'Company'),
-                'TICKER'
-            )
-        
-        if price_chart:
-            st.plotly_chart(price_chart, use_container_width=True)
-            if historical_data.get('source'):
-                st.info(f"📊 Data source: {historical_data['source']}")
-        else:
-            st.info("📊 Price chart data not available")
-            
+            if price_chart:
+                st.plotly_chart(price_chart, use_container_width=True)
+        else:  # Candlestick
+            # Check if we have OHLC data for candlestick
+            if (historical_data.get('highs') and historical_data.get('lows') and 
+                len(historical_data['highs']) > 0 and len(historical_data['lows']) > 0):
+                price_chart = create_candlestick_chart(
+                    historical_data,
+                    finnhub_data.get('name', 'Company'),
+                    'TICKER'
+                )
+                if price_chart:
+                    st.plotly_chart(price_chart, use_container_width=True)
+                else:
+                    st.info("📊 Candlestick chart requires OHLC data which is not available")
+            else:
+                st.info("📊 Candlestick chart requires high/low price data which is not available")
+
+        if historical_data.get('source'):
+            st.info(f"📊 Data source: {historical_data['source']}")
+
         st.markdown("</div>", unsafe_allow_html=True)
     
-    # UPGRADE 2: Price Position Gauge
+    # Price Position Gauge
     current_price = finnhub_data.get('currentPrice', 'N/A')
     week_high = finnhub_data.get('52WeekHigh', 'N/A')
     week_low = finnhub_data.get('52WeekLow', 'N/A')
@@ -383,7 +395,7 @@ def display_sec_filings(sec_data):
     for filing in sec_data[:5]:
         form = filing.get('form', 'N/A')
         date = filing.get('date', 'N/A')
-        sec_summary += f"• **{form}** filed on {date}\n"
+        sec_summary += f"• **{form}** filed on {date}<br>"
     
     st.markdown(f"""
     <div class="report-card">

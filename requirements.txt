@@ -18,5 +18,3 @@ yfinance>=0.2.18
 
 # --- Lightweight ML (Streamlit Compatible) ---
 scikit-learn>=1.3.0
-
-# Using TF-IDF vectorization instead for lightweight RAG

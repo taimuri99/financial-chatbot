@@ -9,15 +9,16 @@ The app combines Finnhub market data + SEC filings, runs them through LLMs, and 
 ├── README.md
 ├── requirements.txt
 ├── DIRECTORY.md
-├── main.py              # Streamlit entrypoint
+├── app.py              # Streamlit entrypoint
 └── src/
     └── fin_dashboard/
         ├── config.py            # API keys, constants
         ├── ui.py                # layouts, components, charts
-        ├── datasources.py       # SEC + Finnhub API fetchers
-        ├── retrieval.py         # embeddings + retriever
-        ├── llm.py               # Hugging Face LLM wrapper
+        ├── datasources.py       # SEC, yFinance sourcing + Finnhub API fetchers
+        ├── charts.py            # viz - main page
+        ├── llm.py               # geminiapi llm structure
         ├── analytics.py         # ratios + comparisons
+        ├── rag.py               # rag analysis - historical data WIP
         └── utils.py             # caching, logging, helpers
 
 
@@ -28,29 +29,25 @@ Root Files
 1) README.md → Project overview, installation, usage.
 2) requirements.txt → Python dependencies.
 3) DIRECTORY.md → Explains repo structure (this file).
-
-Main Procedure Data
-
-1) app.py → App entrypoint, orchestrates workflow.
+4) app.py → App entrypoint, orchestrates workflow - Main Procedure Data
 
 Source (src/fin_dashboard/)
 
 1) config.py → Central config: API keys, constants, endpoints.
 2) ui.py → UI components (cards, metrics, charts).
 3) datasources.py → Fetchers for Finnhub API + SEC filings.
-4) retrieval.py → Embeddings + retriever setup (Chroma DB).
-5) llm.py → Hugging Face pipeline for question answering.
+4) charts.py → Visualizations (analytics) main page.
+5) llm.py → Gemini AI LLM pipeline for question answering.
 6) analytics.py → Financial ratios, benchmarks, comparisons.
 7) utils.py → Helpers: caching, logging, error handling.
+8) rag.py → analytics.py → Financial ratios, benchmarks, comparisons.
 
 🔄 Workflow Diagram
 
-User → UI (Streamlit) → Data Sources (Finnhub + SEC)
+User → UI (Streamlit) → Data Sources (Finnhub, yFinance, SEC)
          ↓
-    Retrieval (Chroma DB)
-         ↓
-    LLM (Hugging Face QA)
+    LLM (Google Gemini QA)
          ↓
     Analytics Layer (ratios, comparisons)
          ↓
-    UI Output (cards, charts, PDF report)
+    UI Output (cards, charts, AI Analysis)

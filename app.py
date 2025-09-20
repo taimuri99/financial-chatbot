@@ -170,7 +170,7 @@ if 'ticker_symbol' not in st.session_state:
     st.session_state.ticker_symbol = None
 
 # ---------------------------
-# Three-Button Architecture (UPGRADED)
+# Three-Button Architecture
 # ---------------------------
 col1, col2, col3 = st.columns(3)
 
@@ -193,7 +193,7 @@ if ai_analysis or rag_analysis:
     )
 
 # ---------------------------
-# UPGRADED: View Reports Workflow
+# View Reports Workflow
 # ---------------------------
 if view_reports:
     try:
@@ -276,7 +276,7 @@ if view_reports:
             st.code(traceback.format_exc())
 
 # ---------------------------
-# UPGRADED: Standard AI Analysis Workflow
+# Standard AI Analysis Workflow
 # ---------------------------
 if ai_analysis:
     if not st.session_state.finnhub_data:
@@ -316,7 +316,7 @@ if ai_analysis:
             st.code(traceback.format_exc())
 
 # ---------------------------
-# NEW: RAG-Enhanced Analysis Workflow
+# RAG-Enhanced Analysis Workflow
 # ---------------------------
 if rag_analysis:
     if not st.session_state.finnhub_data:
@@ -439,7 +439,7 @@ if rag_analysis:
             st.code(traceback.format_exc())
 
 # ---------------------------
-# Enhanced Welcome Screen
+# Welcome Screen
 # ---------------------------
 if not view_reports and not ai_analysis and not rag_analysis:
     # Welcome message with feature highlights 

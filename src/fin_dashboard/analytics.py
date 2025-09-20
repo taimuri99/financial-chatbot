@@ -3,10 +3,7 @@ def format_percent(value):
     try:
         if value is None:
             return "N/A"
-        
-        # Check if Finnhub returns percentages as whole numbers or decimals
-        # Based on debug: grossMarginAnnual: 46.21 (this is 46.21%, not 0.4621)
-        # So we DON'T multiply by 100
+        # Finnhub returns percentages
         return "{:.2f}%".format(float(value))
     except (ValueError, TypeError):
         return "N/A"
@@ -55,22 +52,30 @@ def compute_ratios(finnhub_data):
         
         # Profitability Ratios  
         roe = metrics.get("roeAnnual")
-        if roe:
-            ratios["ROE"] = format_percent(roe)
+        if roe and roe != 0:
+            ratios["ROE"] = format_percent(roe * 100)  # Convert decimal to percentage
         else:
             ratios["ROE"] = "N/A"
+
+        # ROA
+        roa = metrics.get("roaAnnual") 
+        if roa and roa != 0:
+            ratios["ROA"] = format_percent(roa * 100)  # Convert decimal to percentage
+        else:
+            ratios["ROA"] = "N/A"
+
+        # EBITDA Margin
+        ebitda_margin = metrics.get("ebitdaMarginAnnual")
+        if ebitda_margin and ebitda_margin != 0:
+            ratios["EBITDA Margin"] = format_percent(ebitda_margin)
+        else:
+            ratios["EBITDA Margin"] = "N/A"
         
         gross_margin = metrics.get("grossMarginAnnual")
         if gross_margin:
             ratios["Gross Margin"] = format_percent(gross_margin)
         else:
             ratios["Gross Margin"] = "N/A"
-        
-        ebitda_margin = metrics.get("ebitdaMarginAnnual")
-        if ebitda_margin:
-            ratios["EBITDA Margin"] = format_percent(ebitda_margin)
-        else:
-            ratios["EBITDA Margin"] = "N/A"
         
         # Liquidity Ratios
         current_ratio = metrics.get("currentRatioAnnual")

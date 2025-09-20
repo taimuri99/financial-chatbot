@@ -8,7 +8,7 @@ import streamlit as st
 from .utils import format_currency
 
 # ------------------------------
-# UPGRADE 1: Enhanced Price Charts with Volume
+# Price Charts with Volume
 # ------------------------------
 def create_price_chart(price_data, company_name, ticker):
     """
@@ -78,12 +78,11 @@ def create_price_chart(price_data, company_name, ticker):
     return fig
 
 # ------------------------------
-# UPGRADE 2: Candlestick Chart
+# Candlestick Chart
 # ------------------------------
 def create_candlestick_chart(price_data, company_name, ticker):
     """
     Create candlestick chart for detailed price analysis
-    NEW FEATURE: Professional candlestick visualization
     """
     if not price_data or not price_data.get('highs') or len(price_data['dates']) == 0:
         return None
@@ -121,7 +120,7 @@ def create_candlestick_chart(price_data, company_name, ticker):
     return fig
 
 # ------------------------------
-# UPGRADE 3: Multi-Year Financial Trends
+# Multi-Year Financial Trends
 # ------------------------------
 def create_financial_trends_chart(multi_year_data):
     """
@@ -144,10 +143,13 @@ def create_financial_trends_chart(multi_year_data):
     # Revenue trend
     if 'revenue' in financial_data:
         revenue = financial_data['revenue']
+        # Sort by date to ensure proper ordering
+        sorted_data = sorted(zip(revenue['dates'], revenue['values']))
+        dates, values = zip(*sorted_data)
         fig.add_trace(
             go.Scatter(
-                x=revenue['dates'],
-                y=[v/1e9 for v in revenue['values']],  # Convert to billions
+                x=dates,
+                y=[v/1e9 for v in values],  # Convert to billions
                 mode='lines+markers',
                 name='Revenue ($B)',
                 line=dict(color='#4299e1', width=3),
@@ -159,10 +161,13 @@ def create_financial_trends_chart(multi_year_data):
     # Net Income trend
     if 'net_income' in financial_data:
         income = financial_data['net_income']
+        # Sort by date to ensure chronological order (left to right)
+        sorted_data = sorted(zip(income['dates'], income['values']))
+        dates, values = zip(*sorted_data)
         fig.add_trace(
             go.Scatter(
-                x=income['dates'],
-                y=[v/1e9 for v in income['values']],  # Convert to billions
+                x=dates,
+                y=[v/1e9 for v in values],  # Convert to billions
                 mode='lines+markers',
                 name='Net Income ($B)',
                 line=dict(color='#48bb78', width=3),
@@ -170,29 +175,35 @@ def create_financial_trends_chart(multi_year_data):
             ),
             row=1, col=2
         )
-    
+
     # Revenue Growth
     ratios = multi_year_data.get('ratios_timeline', {})
     if 'revenue_growth' in ratios:
         growth = ratios['revenue_growth']
-        colors = ['#48bb78' if x >= 0 else '#f56565' for x in growth['values']]
+        # Sort by date to ensure chronological order
+        sorted_data = sorted(zip(growth['dates'], growth['values']))
+        dates, values = zip(*sorted_data)
+        colors = ['#48bb78' if x >= 0 else '#f56565' for x in values]
         fig.add_trace(
             go.Bar(
-                x=growth['dates'],
-                y=growth['values'],
+                x=dates,
+                y=values,
                 name='Revenue Growth %',
                 marker_color=colors
             ),
             row=2, col=1
         )
-    
+
     # Profit Margin
     if 'profit_margin' in ratios:
         margin = ratios['profit_margin']
+        # Sort by date to ensure chronological order
+        sorted_data = sorted(zip(margin['dates'], margin['values']))
+        dates, values = zip(*sorted_data)
         fig.add_trace(
             go.Scatter(
-                x=margin['dates'],
-                y=margin['values'],
+                x=dates,
+                y=values,
                 mode='lines+markers',
                 name='Profit Margin %',
                 line=dict(color='#9f7aea', width=3),
@@ -225,7 +236,7 @@ def create_financial_trends_chart(multi_year_data):
     return fig
 
 # ------------------------------
-# UPGRADE 4: Enhanced Ratios Chart
+# Ratios Chart
 # ------------------------------
 def create_ratios_chart(ratios_data):
     """
@@ -308,7 +319,7 @@ def create_ratios_chart(ratios_data):
     return fig
 
 # ------------------------------
-# UPGRADE 5: Performance Comparison Chart
+# Performance Comparison Chart
 # ------------------------------
 def create_performance_comparison(current_data, historical_data):
     """
@@ -371,7 +382,7 @@ def create_performance_comparison(current_data, historical_data):
     return fig
 
 # ------------------------------
-# EXISTING FUNCTIONS (Enhanced)
+# E-FUNCTIONS
 # ------------------------------
 def create_metrics_gauge_chart(current_price, week_52_high, week_52_low, ticker):
     """Enhanced gauge chart with better styling"""
@@ -485,7 +496,7 @@ def create_trend_chart(trend_data):
     return fig
 
 # ------------------------------
-# UPGRADE 6: Portfolio-Style Summary Chart
+# Portfolio-Style Summary Chart
 # ------------------------------
 def create_portfolio_summary(company_data):
     """
@@ -541,21 +552,21 @@ def create_portfolio_summary(company_data):
     metrics = company_data.get('metric', {})
     health_scores = []
     health_labels = []
-    
+
     # ROE Score
     roe = metrics.get('roeAnnual', 0)
-    if roe and roe != "N/A":
+    if roe and roe != "N/A" and roe != 0:
         try:
-            roe_val = float(roe) * 100
+            roe_val = float(roe) * 100  # Convert decimal to percentage
             roe_score = min(100, max(0, (roe_val / 20) * 100))  # 20% ROE = 100 score
             health_scores.append(roe_score)
             health_labels.append('ROE')
         except (ValueError, TypeError):
             pass
-    
+
     # Debt Score (inverse - lower debt = higher score)
     debt_equity = metrics.get('totalDebt/totalEquityAnnual', 0)
-    if debt_equity and debt_equity != "N/A":
+    if debt_equity and debt_equity != "N/A" and debt_equity != 0:
         try:
             debt_val = float(debt_equity)
             debt_score = max(0, 100 - (debt_val * 100))  # Lower debt = higher score
@@ -563,19 +574,41 @@ def create_portfolio_summary(company_data):
             health_labels.append('Debt Mgmt')
         except (ValueError, TypeError):
             pass
-    
+
+    # Add Current Ratio Score
+    current_ratio = metrics.get('currentRatioAnnual', 0)
+    if current_ratio and current_ratio != "N/A" and current_ratio != 0:
+        try:
+            ratio_val = float(current_ratio)
+            ratio_score = min(100, max(0, (ratio_val / 2.0) * 100))  # 2.0 ratio = 100 score
+            health_scores.append(ratio_score)
+            health_labels.append('Liquidity')
+        except (ValueError, TypeError):
+            pass
+
     if health_scores:
         colors = ['#48bb78' if score >= 70 else '#ed8936' if score >= 40 else '#f56565' 
-                  for score in health_scores]
+                for score in health_scores]
         
         fig.add_trace(
             go.Bar(
                 x=health_labels,
                 y=health_scores,
                 marker_color=colors,
-                name="Health Scores"
+                name="Health Scores",
+                text=[f'{score:.0f}' for score in health_scores],
+                textposition='outside'
             ),
             row=1, col=2
+        )
+    else:
+        # Show message when no health data available
+        fig.add_annotation(
+            text="Health metrics not available",
+            xref="paper", yref="paper",
+            x=0.75, y=0.75,
+            showarrow=False,
+            font=dict(size=14, color="#718096")
         )
     
     fig.update_layout(
