@@ -417,7 +417,7 @@ if enhanced_ai_analysis:
 # ---------------------------
 # Welcome Screen
 # ---------------------------
-if not view_reports and not ai_analysis and not rag_analysis:
+if not view_reports and not enhanced_ai_analysis:
     # Welcome message with feature highlights 
     st.markdown('<div class="report-card">', unsafe_allow_html=True)
     st.markdown('<div class="card-title">🎯 Welcome to the Financial Analysis Platform</div>', unsafe_allow_html=True)
