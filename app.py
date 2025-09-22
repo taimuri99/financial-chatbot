@@ -169,7 +169,7 @@ if 'ticker_symbol' not in st.session_state:
     st.session_state.ticker_symbol = None
 
 # ---------------------------
-# Three-Button Architecture
+# Two-Button Architecture
 # ---------------------------
 col1, col2 = st.columns(2)
 
@@ -177,7 +177,8 @@ with col1:
     view_reports = st.button("📊 View Reports", type="primary", use_container_width=True)
     
 with col2:
-    enhanced_ai_analysis = st.button("💻 AI RAG Analysis", type="secondary", use_container_width=True)
+    if st.button("🧠 AI RAG Analysis", type="secondary", use_container_width=True):
+        st.session_state['show_ai_analysis'] = True
 
 
 # ---------------------------
@@ -266,7 +267,13 @@ if view_reports:
 # ---------------------------
 # Enhanced AI Analysis Workflow with User Choice, sub buttons
 # ---------------------------
-if enhanced_ai_analysis:
+if st.session_state.get('show_ai_analysis', False):
+    # Back to Home button at the top
+    if st.button("🏠 Back to Home"):
+        if 'show_ai_analysis' in st.session_state:
+            del st.session_state['show_ai_analysis']
+        st.rerun()
+    st.markdown("---")  # Visual separator
     # Check if we need fresh data for new ticker
     current_ticker = ticker.upper()
     if (not st.session_state.finnhub_data or 
@@ -341,7 +348,7 @@ if enhanced_ai_analysis:
         
         # Clear the selection after processing
         del st.session_state['analysis_type']
-        
+
         try:
             query = user_query or "Provide a comprehensive financial analysis with historical context and predictive insights."
             
