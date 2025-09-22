@@ -462,14 +462,6 @@ if st.session_state.get('show_ai_analysis', False):
                                 Historical Context Integration & Predictive Modeling
                             </div>
                         </div>
-                        
-                        <div style="
-                            background: white;
-                            padding: 35px;
-                            color: #2d3748;
-                            line-height: 1.9;
-                            font-size: 16px;
-                            white-space: pre-wrap;">
                             {formatted_text}
                         </div>
                     </div>""", unsafe_allow_html=True)
