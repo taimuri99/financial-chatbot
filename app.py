@@ -1,5 +1,4 @@
 import streamlit as st
-import textwrap
 import requests
 import traceback
 from src.fin_dashboard.ui import (
@@ -443,7 +442,7 @@ if st.session_state.get('show_ai_analysis', False):
                     """, unsafe_allow_html=True)
                     
                     # Main Analysis Content
-                    html_content = textwrap.dedent(f"""<div style="
+                    st.markdown(f"""<div style="
                         background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
                         border-left: 6px solid #38b2ac;
                         padding: 0;
@@ -470,12 +469,10 @@ if st.session_state.get('show_ai_analysis', False):
                             color: #2d3748;
                             line-height: 1.9;
                             font-size: 16px;
-                            white-space: pre-wrap;
-                        ">
+                            white-space: pre-wrap;">
                             {formatted_text}
                         </div>
-                    </div>""")
-                    st.markdown(html_content, unsafe_allow_html=True)
+                    </div>""", unsafe_allow_html=True)
                     
                     # Methodology Footer
                     st.markdown(f"""
