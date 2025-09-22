@@ -513,6 +513,7 @@ if st.session_state.get('show_ai_analysis', False):
                         padding: 0;
                         margin: 0 0 20px 0;
                         box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                        color: #2d3748;
                     ">
                         <div style="
                             background: rgba(102, 126, 234, 0.1);
@@ -526,15 +527,6 @@ if st.session_state.get('show_ai_analysis', False):
                                 Current Market Analysis & Performance Evaluation
                             </div>
                         </div>
-                        
-                        <div style="
-                            background: white;
-                            padding: 35px;
-                            color: #2d3748;
-                            line-height: 1.9;
-                            font-size: 16px;
-                            white-space: pre-wrap;
-                        ">
                             {formatted_text}
                         </div>
                     </div>""", unsafe_allow_html=True)
