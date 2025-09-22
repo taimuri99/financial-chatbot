@@ -91,6 +91,17 @@ def get_simple_ai_analysis(context_data, user_query):
     
 
 def get_enhanced_ai_analysis(context_data, user_query):
+    # Check if user forced standard analysis
+    force_standard = context_data.get("force_standard", False)
+    
+    if force_standard:
+        # Skip RAG and go directly to standard analysis
+        standard_analysis = get_simple_ai_analysis(context_data, user_query)
+        return {
+            "analysis": standard_analysis,
+            "method": "Standard AI",
+            "context_sources": 0
+        }
     """
     Enhanced AI analysis that combines standard AI with RAG when available
     Uses RAG for historical context, falls back to standard AI if no multi-year data
