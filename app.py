@@ -177,16 +177,8 @@ with col1:
     view_reports = st.button("📊 View Reports", type="primary", use_container_width=True)
     
 with col2:
-    enhanced_ai_analysis = st.button("🧠 AI RAG Analysis", type="secondary", use_container_width=True)
+    enhanced_ai_analysis = st.button("💻 AI RAG Analysis", type="secondary", use_container_width=True)
 
-# User query for AI analysis
-if  enhanced_ai_analysis:
-    user_query = st.text_area(
-        "Ask a question about this company:",
-        "Provide a comprehensive analysis of the company's financial performance, including historical trends and future outlook.",
-        key="ai_query",
-        height=100
-    )
 
 # ---------------------------
 # View Reports Workflow
@@ -272,10 +264,7 @@ if view_reports:
             st.code(traceback.format_exc())
 
 # ---------------------------
-# Enhanced AI Analysis Workflow with User Choice
-# ---------------------------
-# ---------------------------
-# Enhanced AI Analysis Workflow with Sub-buttons
+# Enhanced AI Analysis Workflow with User Choice, sub buttons
 # ---------------------------
 if enhanced_ai_analysis:
     # Check if we need fresh data for new ticker
@@ -340,7 +329,19 @@ if enhanced_ai_analysis:
         st.warning("⚠️ No historical data found - Only standard analysis available")
     
     # Process analysis based on button clicked
-    if run_rag_analysis or run_standard_analysis:
+    # Run analysis immediately when button is clicked
+    if run_rag_analysis:
+        st.session_state['analysis_type'] = 'RAG'
+    elif run_standard_analysis:
+        st.session_state['analysis_type'] = 'Standard'
+
+    # Process analysis if a type was selected
+    if st.session_state.get('analysis_type'):
+        analysis_type = st.session_state['analysis_type']
+        
+        # Clear the selection after processing
+        del st.session_state['analysis_type']
+        
         try:
             query = user_query or "Provide a comprehensive financial analysis with historical context and predictive insights."
             
