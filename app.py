@@ -12,7 +12,7 @@ from src.fin_dashboard.ui import (
     display_portfolio_summary
 )
 from src.fin_dashboard.datasources import get_finnhub_company_data, get_sec_filings
-from src.fin_dashboard.llm import get_simple_ai_analysis
+from src.fin_dashboard.llm import get_simple_ai_analysis, get_enhanced_ai_analysis 
 from src.fin_dashboard.rag import generate_rag_enhanced_analysis, get_predictive_insights
 from src.fin_dashboard.analytics import compute_ratios, summarize_trends
 from src.fin_dashboard.config import FINNHUB_API_KEY
@@ -172,19 +172,16 @@ if 'ticker_symbol' not in st.session_state:
 # ---------------------------
 # Three-Button Architecture
 # ---------------------------
-col1, col2, col3 = st.columns(3)
+col1, col2 = st.columns(2)
 
 with col1:
     view_reports = st.button("📊 View Reports", type="primary", use_container_width=True)
     
 with col2:
-    ai_analysis = st.button("🤖 AI Analysis", type="secondary", use_container_width=True)
-
-with col3:
-    rag_analysis = st.button("🧠 RAG Analysis", type="secondary", use_container_width=True, disabled=not enable_rag)
+    enhanced_ai_analysis = st.button("🧠 AI RAG Analysis", type="secondary", use_container_width=True)
 
 # User query for AI analysis
-if ai_analysis or rag_analysis:
+if  enhanced_ai_analysis:
     user_query = st.text_area(
         "Ask a question about this company:",
         "Provide a comprehensive analysis of the company's financial performance, including historical trends and future outlook.",
@@ -276,11 +273,11 @@ if view_reports:
             st.code(traceback.format_exc())
 
 # ---------------------------
-# Standard AI Analysis Workflow
+# Enhanced AI Analysis Workflow (Replace both AI and RAG sections)
 # ---------------------------
-if ai_analysis:
+if enhanced_ai_analysis:
     if not st.session_state.finnhub_data:
-        st.info("🔍 Fetching company data for AI analysis...")
+        st.info("🔍 Fetching company data for enhanced RAG analysis...")
         with st.spinner(f"Loading data for {ticker.upper()}..."):
             finnhub_result = get_finnhub_company_data(ticker.upper())
             sec_result = get_sec_filings(ticker.upper(), count=5)
@@ -290,55 +287,50 @@ if ai_analysis:
             st.session_state.ticker_symbol = ticker.upper()
     
     try:
-        query = st.session_state.get("ai_query", "Provide a comprehensive financial analysis.")
+        query = st.session_state.get("ai_query", "Provide a comprehensive financial analysis with historical context and predictive insights.")
         
-        with st.spinner("🤖 Generating AI insights..."):
-            context_data = {
-                "company_info": st.session_state.finnhub_data,
-                "sec_filings": st.session_state.sec_data,
-                "ratios": compute_ratios(st.session_state.finnhub_data),
-                "trends": summarize_trends(st.session_state.finnhub_data)
-            }
-            
-            ai_response = get_simple_ai_analysis(context_data, query)
-            st.session_state.analysis_data = ai_response
+        # Check if we have multi-year data for enhanced analysis
+        multi_year_data = st.session_state.finnhub_data.get('multi_year_data', {})
+        has_historical_data = bool(multi_year_data.get('financial_data'))
         
-        if st.session_state.analysis_data:
-            st.success("✅ AI analysis complete!")
-            display_ai_insights(st.session_state.analysis_data)
+        if has_historical_data:
+            with st.spinner("🧠 Generating enhanced AI RAG analysis with historical context..."):
+                # Progress indicators for RAG-enhanced analysis
+                progress_bar = st.progress(0)
+                status_text = st.empty()
+                
+                status_text.text("📊 Processing multi-year financial data...")
+                progress_bar.progress(25)
+                
+                status_text.text("🔍 Creating document vectors...")
+                progress_bar.progress(50)
+                
+                status_text.text("🧠 Retrieving relevant historical context...")
+                progress_bar.progress(75)
+                
+                # Prepare context data
+                context_data = {
+                    "company_info": st.session_state.finnhub_data,
+                    "sec_filings": st.session_state.sec_data,
+                    "ratios": compute_ratios(st.session_state.finnhub_data),
+                    "trends": summarize_trends(st.session_state.finnhub_data),
+                    "ticker": st.session_state.ticker_symbol or ticker.upper()
+                }
+                
+                # Use enhanced AI analysis
+                enhanced_response = get_enhanced_ai_analysis(context_data, query)
+                
+                status_text.text("✅ Enhanced AI RAG analysis complete!")
+                progress_bar.progress(100)
+                
+                st.session_state.analysis_data = enhanced_response
+                
+                # Clear progress indicators
+                progress_bar.empty()
+                status_text.empty()
         else:
-            st.error("❌ Could not generate AI analysis. Please try again.")
-            
-    except Exception as e:
-        st.error(f"❌ AI Analysis error: {str(e)}")
-        st.info("💡 Tip: Try a simpler question or check your API keys in Streamlit secrets.")
-        with st.expander("Debug Information"):
-            st.code(traceback.format_exc())
-
-# ---------------------------
-# RAG-Enhanced Analysis Workflow
-# ---------------------------
-if rag_analysis:
-    if not st.session_state.finnhub_data:
-        st.info("🔍 Fetching company data for RAG analysis...")
-        with st.spinner(f"Loading data for {ticker.upper()}..."):
-            finnhub_result = get_finnhub_company_data(ticker.upper())
-            sec_result = get_sec_filings(ticker.upper(), count=5)
-            
-            st.session_state.finnhub_data = finnhub_result.get("data", {})
-            st.session_state.sec_data = sec_result.get("data", [])
-            st.session_state.ticker_symbol = ticker.upper()
-    
-    # Check if multi-year data is available
-    multi_year_data = st.session_state.finnhub_data.get('multi_year_data', {})
-    if not multi_year_data.get('financial_data'):
-        st.warning("⚠️ No historical financial data available for RAG analysis. Using standard AI analysis instead.")
-        
-        # Fallback to standard AI analysis
-        try:
-            query = st.session_state.get("ai_query", "Provide a comprehensive financial analysis.")
-            
-            with st.spinner("🤖 Generating enhanced AI insights..."):
+            with st.spinner("🤖 Generating RAG AI analysis..."):
+                # Standard AI analysis for companies without multi-year data
                 context_data = {
                     "company_info": st.session_state.finnhub_data,
                     "sec_filings": st.session_state.sec_data,
@@ -346,75 +338,54 @@ if rag_analysis:
                     "trends": summarize_trends(st.session_state.finnhub_data)
                 }
                 
-                ai_response = get_simple_ai_analysis(context_data, query)
-                st.session_state.analysis_data = ai_response
-            
-            if st.session_state.analysis_data:
-                st.success("✅ Enhanced AI analysis complete!")
-                display_ai_insights(st.session_state.analysis_data)
-            
-        except Exception as e:
-            st.error(f"❌ Enhanced AI Analysis error: {str(e)}")
+                enhanced_response = get_enhanced_ai_analysis(context_data, query)
+                st.session_state.analysis_data = enhanced_response
         
-        st.stop()
-    
-    try:
-        query = st.session_state.get("ai_query", "Provide a comprehensive analysis with historical context and predictive insights.")
-        
-        with st.spinner("🧠 Generating RAG-enhanced analysis with historical context..."):
-            # Progress indicators
-            progress_bar = st.progress(0)
-            status_text = st.empty()
-            
-            status_text.text("📊 Processing multi-year financial data...")
-            progress_bar.progress(25)
-            
-            status_text.text("🔍 Creating document vectors...")
-            progress_bar.progress(50)
-            
-            status_text.text("🧠 Retrieving relevant historical context...")
-            progress_bar.progress(75)
-            
-            # Generate RAG-enhanced analysis
-            rag_response = generate_rag_enhanced_analysis(
-                st.session_state.finnhub_data, 
-                st.session_state.ticker_symbol or ticker.upper(), 
-                query
-            )
-            
-            status_text.text("✅ Analysis complete!")
-            progress_bar.progress(100)
-            
-            st.session_state.analysis_data = rag_response
-        
-        # Clear progress indicators
-        progress_bar.empty()
-        status_text.empty()
-        
+        # Display results
         if st.session_state.analysis_data:
-            st.success("✅ RAG-enhanced analysis complete!")
+            analysis_result = st.session_state.analysis_data
+            method_used = analysis_result.get("method", "Unknown")
+            context_sources = analysis_result.get("context_sources", 0)
             
-            # Special display for RAG analysis
+            if method_used == "RAG-Enhanced":
+                st.success(f"✅ Enhanced AI RAG analysis complete! Used {context_sources} historical data points.")
+            else:
+                st.success("✅ AI analysis complete!")
+            
+            # Special display for enhanced analysis
+            analysis_text = analysis_result.get("analysis", "No analysis available")
+            
+            # Format the analysis text
             import re
-            rag_formatted = str(st.session_state.analysis_data)
-
-            # Proper text formatting
-            rag_formatted = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', rag_formatted)
-            rag_formatted = rag_formatted.replace('\n\n', '</p><p>')
-            rag_formatted = rag_formatted.replace('\n', '<br>')
-            rag_formatted = re.sub(r'^[\s]*[-•*]\s*', '• ', rag_formatted, flags=re.MULTILINE)
-
-            # Wrap in paragraphs
-            if not rag_formatted.startswith('<p>'):
-                rag_formatted = f'<p>{rag_formatted}</p>'
-
-            st.markdown(f"""
-            <div class="report-card" style="
+            formatted_text = str(analysis_text)
+            formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted_text)
+            formatted_text = formatted_text.replace('\n\n', '</p><p>')
+            formatted_text = formatted_text.replace('\n', '<br>')
+            formatted_text = re.sub(r'^[\s]*[-•*]\s*', '• ', formatted_text, flags=re.MULTILINE)
+            
+            if not formatted_text.startswith('<p>'):
+                formatted_text = f'<p>{formatted_text}</p>'
+            
+            # Choose styling based on analysis method
+            if method_used == "RAG-Enhanced":
+                card_style = """
                 background: linear-gradient(135deg, rgba(56, 178, 172, 0.1) 0%, rgba(72, 187, 120, 0.1) 100%);
                 border-left: 5px solid #38b2ac;
-            ">
-                <div class="card-title">🧠 RAG-Enhanced Financial Analysis</div>
-                <div class="card-subtitle">Advanced insights powered by historical data retrieval and predictive modeling</div>
+                """
+                title = "🧠 Enhanced AI RAG Analysis (with Historical Context)"
+                subtitle = "Advanced insights powered by historical data retrieval and predictive modeling"
+            else:
+                card_style = """
+                background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(159, 122, 234, 0.1) 100%);
+                border-left: 5px solid #667eea;
+                """
+                title = "🤖 AI Financial Analysis"
+                subtitle = "Professional insights powered by current financial data"
+            
+            st.markdown(f"""
+            <div class="report-card" style="{card_style}">
+                <div class="card-title">{title}</div>
+                <div class="card-subtitle">{subtitle}</div>
                 <div style="
                     color: #2d3748; 
                     line-height: 1.8; 
@@ -425,16 +396,22 @@ if rag_analysis:
                     margin-top: 20px;
                     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
                 ">
-                    {rag_formatted}
+                    {formatted_text}
                 </div>
             </div>
             """, unsafe_allow_html=True)
+            
+            # Show method info
+            if method_used == "RAG-Enhanced":
+                st.info(f"📊 Analysis enhanced with RAG method and {context_sources} historical data points from multi-year financial records")
+            elif method_used == "Standard AI":
+                st.info("📋 Analysis based on current financial data (no multi-year historical data available)")
         else:
-            st.error("❌ Could not generate RAG-enhanced analysis. Please try again.")
+            st.error("❌ Could not generate enhanced analysis. Please try again.")
             
     except Exception as e:
-        st.error(f"❌ RAG Analysis error: {str(e)}")
-        st.info("💡 Tip: Try the standard AI analysis if RAG system encounters issues.")
+        st.error(f"❌ Enhanced Analysis error: {str(e)}")
+        st.info("💡 Tip: Try refreshing the page or check your API keys in Streamlit secrets.")
         with st.expander("Debug Information"):
             st.code(traceback.format_exc())
 
@@ -448,7 +425,7 @@ if not view_reports and not ai_analysis and not rag_analysis:
     st.markdown('<div class="card-subtitle">Financial insights with AI and predictive analytics</div>', unsafe_allow_html=True)
 
     # Create three columns for the feature cards
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
 
     with col1:
         st.markdown("""
@@ -466,25 +443,13 @@ if not view_reports and not ai_analysis and not rag_analysis:
     with col2:
         st.markdown("""
         <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, #f0fff4 0%, #f7fafc 100%); border-radius: 15px; border: 2px solid rgba(56, 161, 105, 0.2); margin-bottom: 20px;">
-            <h3 style="color: #38a169; margin-bottom: 12px;">🤖 AI Analysis</h3>
+            <h3 style="color: #38a169; margin-bottom: 12px;">🧠 Enhanced AI Analysis</h3>
             <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 0;">
                 • Gemini-powered insights<br>
-                • Current financial analysis<br>
+                • Historical data integration<br>
+                • RAG-enhanced when available<br>
                 • Custom query responses<br>
-                • Professional recommendations
-            </p>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with col3:
-        st.markdown("""
-        <div style="text-align: center; padding: 24px; background: linear-gradient(135deg, #fef5e7 0%, #fff5f0 100%); border-radius: 15px; border: 2px solid rgba(221, 107, 32, 0.2); margin-bottom: 20px;">
-            <h3 style="color: #dd6b20; margin-bottom: 12px;">🧠 RAG Analysis</h3>
-            <p style="color: #4a5568; font-size: 14px; line-height: 1.6; margin: 0;">
-                • Historical context retrieval<br>
-                • Multi-year trend analysis<br>
-                • Pattern recognition<br>
-                • Predictive modeling
+                • Predictive recommendations
             </p>
         </div>
         """, unsafe_allow_html=True)

@@ -76,51 +76,6 @@ def create_price_chart(price_data, company_name, ticker):
     
     return fig
 
-# ------------------------------
-# Candlestick Chart
-# ------------------------------
-def create_candlestick_chart(price_data, company_name, ticker):
-    """Create candlestick chart or fallback to line chart"""
-    if not price_data or not price_data.get('dates'):
-        return None
-    
-    # Check if we have OHLC data
-    has_ohlc = all(key in price_data and price_data[key] for key in ['opens', 'highs', 'lows', 'prices'])
-    
-    if not has_ohlc:
-        # Fallback: create a line chart that looks like candlestick
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=price_data['dates'],
-            y=price_data['prices'],
-            mode='lines',
-            name=f'{ticker} Price',
-            line=dict(color='#26a69a', width=2)
-        ))
-        fig.update_layout(
-            title=f'{company_name} ({ticker}) - Price Chart (Candlestick data unavailable)',
-            template='plotly_white',
-            height=400
-        )
-        return fig
-    
-    # Create actual candlestick chart
-    fig = go.Figure(data=go.Candlestick(
-        x=price_data['dates'],
-        open=price_data['opens'],
-        high=price_data['highs'],
-        low=price_data['lows'],
-        close=price_data['prices'],
-        name=ticker
-    ))
-    
-    fig.update_layout(
-        title=f'{company_name} ({ticker}) - Candlestick Chart',
-        template='plotly_white',
-        height=400
-    )
-    
-    return fig
 
 # ------------------------------
 # Multi-Year Financial Trends

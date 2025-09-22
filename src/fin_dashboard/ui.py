@@ -232,7 +232,7 @@ def display_financial_metrics(finnhub_data):
         # Chart type selector
         chart_cols = st.columns([1, 1, 2])
         with chart_cols[0]:
-            chart_type = st.selectbox("Chart Type", ["Line + Volume", "Candlestick"], key="price_chart_type")
+            chart_type = st.selectbox("Chart Type", ["Line + Volume"], key="price_chart_type")
         
         # Always create the card container first
         st.markdown("""
@@ -255,40 +255,6 @@ def display_financial_metrics(finnhub_data):
                     chart_rendered = True
             except Exception as e:
                 st.error(f"Line chart error: {str(e)}")
-        
-        else:  # Candlestick
-            try:
-                # Debug info
-                st.write("Debug: Attempting candlestick chart...")
-                st.write(f"Has highs: {bool(historical_data.get('highs'))}")
-                st.write(f"Has lows: {bool(historical_data.get('lows'))}")
-                
-                price_chart = create_candlestick_chart(
-                    historical_data,
-                    finnhub_data.get('name', 'Company'),
-                    'TICKER'
-                )
-                
-                if price_chart:
-                    st.plotly_chart(price_chart, use_container_width=True)
-                    chart_rendered = True
-                else:
-                    st.warning("Candlestick chart returned None")
-                    
-            except Exception as e:
-                st.error(f"Candlestick error: {str(e)}")
-                # Show fallback
-                try:
-                    price_chart = create_price_chart(
-                        historical_data, 
-                        finnhub_data.get('name', 'Company'),
-                        'TICKER'
-                    )
-                    if price_chart:
-                        st.plotly_chart(price_chart, use_container_width=True)
-                        chart_rendered = True
-                except Exception as fallback_e:
-                    st.error(f"Fallback chart also failed: {str(fallback_e)}")
         
         if not chart_rendered:
             st.info("Chart could not be displayed. Please try the other chart type.")
