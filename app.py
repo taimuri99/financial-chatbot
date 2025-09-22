@@ -181,8 +181,6 @@ with col2:
 
 # User query for AI analysis
 if  enhanced_ai_analysis:
-    # Check if we need fresh data for new ticker
-    current_ticker = ticker.upper()
     user_query = st.text_area(
         "Ask a question about this company:",
         "Provide a comprehensive analysis of the company's financial performance, including historical trends and future outlook.",
@@ -277,15 +275,19 @@ if view_reports:
 # Enhanced AI Analysis Workflow (Replace both AI and RAG sections)
 # ---------------------------
 if enhanced_ai_analysis:
-    if not st.session_state.finnhub_data:
-        st.info("🔍 Fetching company data for enhanced RAG analysis...")
-        with st.spinner(f"Loading data for {ticker.upper()}..."):
-            finnhub_result = get_finnhub_company_data(ticker.upper())
-            sec_result = get_sec_filings(ticker.upper(), count=5)
+    # Check if we need fresh data for new ticker
+    current_ticker = ticker.upper()
+    if (not st.session_state.finnhub_data or 
+        st.session_state.ticker_symbol != current_ticker):
+        
+        st.info(f"🔍 Fetching company data for {current_ticker}...")
+        with st.spinner(f"Loading data for {current_ticker}..."):
+            finnhub_result = get_finnhub_company_data(current_ticker)
+            sec_result = get_sec_filings(current_ticker, count=5)
             
             st.session_state.finnhub_data = finnhub_result.get("data", {})
             st.session_state.sec_data = sec_result.get("data", [])
-            st.session_state.ticker_symbol = ticker.upper()
+            st.session_state.ticker_symbol = current_ticker
     
     try:
         query = st.session_state.get("ai_query", "Provide a comprehensive financial analysis with historical context and predictive insights.")
