@@ -275,6 +275,8 @@ if view_reports:
 # Enhanced AI Analysis Workflow (Replace both AI and RAG sections)
 # ---------------------------
 if enhanced_ai_analysis:
+    # Check if we need fresh data for new ticker
+    current_ticker = ticker.upper()
     if not st.session_state.finnhub_data:
         st.info("🔍 Fetching company data for enhanced RAG analysis...")
         with st.spinner(f"Loading data for {ticker.upper()}..."):
