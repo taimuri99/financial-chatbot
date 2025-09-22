@@ -1,4 +1,5 @@
 import streamlit as st
+import textwrap
 import requests
 import traceback
 from src.fin_dashboard.ui import (
@@ -413,6 +414,11 @@ if st.session_state.get('show_ai_analysis', False):
                 formatted_text = re.sub(r'\*(.*?)\*', r'\1', formatted_text)
                 formatted_text = formatted_text.replace('*', '')  # Remove any remaining asterisks
                 formatted_text = formatted_text.strip()
+
+                # Ensure we have actual content
+                if len(formatted_text) < 50:
+                    st.error("❌ Analysis text too short. Please try again.")
+                    st.stop()
                 
                 # Professional Financial Report Display
                 if method_used == "RAG-Enhanced":
@@ -437,7 +443,7 @@ if st.session_state.get('show_ai_analysis', False):
                     """, unsafe_allow_html=True)
                     
                     # Main Analysis Content
-                    st.markdown(f"""<div style="
+                    html_content = textwrap.dedent(f"""<div style="
                         background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
                         border-left: 6px solid #38b2ac;
                         padding: 0;
@@ -487,7 +493,8 @@ if st.session_state.get('show_ai_analysis', False):
                             Real-time market data integrated with historical patterns using AI-powered retrieval and synthesis.
                         </div>
                     </div>
-                    """, unsafe_allow_html=True)
+                    """)
+                    st.markdown(html_content, unsafe_allow_html=True)
 
                 else:
                     st.success("✅ AI Financial Analysis Complete")
