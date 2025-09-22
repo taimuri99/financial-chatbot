@@ -350,21 +350,15 @@ if enhanced_ai_analysis:
             # Format the analysis text
             import re
             formatted_text = str(analysis_text)
-            formatted_text = str(analysis_text)
-            # Clean markdown formatting
-            formatted_text = re.sub(r'#{1,6}\s*(.*)', r'<h3 style="color: #2d3748; margin: 24px 0 16px 0; font-weight: 700;">\1</h3>', formatted_text)
+            # Clean up markdown formatting
+            formatted_text = re.sub(r'#{1,6}\s*(.*)', r'<h3 style="color: #2d3748; margin: 20px 0 12px 0; font-weight: 700;">\1</h3>', formatted_text)
             formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted_text)
-            formatted_text = re.sub(r'\*(.*?)\*', r'<em>\1</em>', formatted_text)
-            formatted_text = re.sub(r'^[\s]*[•*-]\s*', '• ', formatted_text, flags=re.MULTILINE)
-            # Convert paragraphs
-            paragraphs = formatted_text.split('\n\n')
-            formatted_paragraphs = []
-            for p in paragraphs:
-                if p.strip():
-                    # Replace single newlines with spaces within paragraphs
-                    p = p.replace('\n', ' ').strip()
-                    formatted_paragraphs.append(f'<p style="margin-bottom: 16px; text-align: justify;">{p}</p>')
-            formatted_text = ''.join(formatted_paragraphs)
+            formatted_text = re.sub(r'^[\s]*[•*-]\s*', '<br>• ', formatted_text, flags=re.MULTILINE)
+            # Simple paragraph breaks
+            formatted_text = formatted_text.replace('\n\n', '<br><br>')
+            formatted_text = formatted_text.replace('\n', '<br>')
+            # Remove any double <br> tags
+            formatted_text = re.sub(r'(<br>\s*){3,}', '<br><br>', formatted_text)
             
             if not formatted_text.startswith('<p>'):
                 formatted_text = f'<p>{formatted_text}</p>'
