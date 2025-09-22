@@ -16,9 +16,8 @@ The app combines Finnhub market data + SEC filings, runs them through LLMs, and 
         ├── ui.py                # layouts, components, charts
         ├── datasources.py       # SEC, yFinance sourcing + Finnhub API fetchers
         ├── charts.py            # viz - main page
-        ├── llm.py               # geminiapi llm structure
-        ├── analytics.py         # ratios + comparisons, formatting
-        └── rag.py               # rag analysis - historical data WIP
+        ├── llm.py               # geminiapi llm structure, rag analysis - historical data WIP
+        └── analytics.py         # ratios + comparisons, formatting              
 
 
 📖 File/Folder Guide
@@ -36,9 +35,9 @@ Source (src/fin_dashboard/)
 2) ui.py → UI components (cards, metrics, charts).
 3) datasources.py → Fetchers for Finnhub API + SEC filings.
 4) charts.py → Visualizations (analytics) main page.
-5) llm.py → Gemini AI LLM pipeline for question answering.
+5) llm.py → Gemini AI LLM pipeline for question answering including RAG advanced AI analysis option with historical data.
 6) analytics.py → Financial ratios, benchmarks, comparisons, formatting
-7) rag.py → analytics.py → Financial ratios, benchmarks, comparisons.
+7) analytics.py → Financial ratios, benchmarks, comparisons.
 
 🔄 Workflow Diagram
 

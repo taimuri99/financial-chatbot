@@ -14,10 +14,10 @@ A **streamlined financial analysis platform** combining **real-time market data 
 
 ## 🏗️ Architecture Overview
 
-### **Three-Workflow Design**
+### **Two-Workflow Design**
 - **📊 View Reports**: Fast data retrieval and professional display (no AI processing)
 - **🤖 AI Analysis**: Separate AI-powered insights workflow with context-aware analysis
-- **🖥️ Rag Analysis** Additional RAG enhanced analysis using historical data *(WIP)* 
+   - **🖥️ Rag Analysis** Additional option for RAG enhanced analysis using historical data
 
 ### **Tech Stack**
 - **Frontend**: Streamlit with custom CSS styling
