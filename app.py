@@ -350,15 +350,12 @@ if enhanced_ai_analysis:
             # Format the analysis text
             import re
             formatted_text = str(analysis_text)
-            # Clean up markdown formatting
-            formatted_text = re.sub(r'#{1,6}\s*(.*)', r'<h3 style="color: #2d3748; margin: 20px 0 12px 0; font-weight: 700;">\1</h3>', formatted_text)
-            formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted_text)
-            formatted_text = re.sub(r'^[\s]*[•*-]\s*', '<br>• ', formatted_text, flags=re.MULTILINE)
-            # Simple paragraph breaks
-            formatted_text = formatted_text.replace('\n\n', '<br><br>')
-            formatted_text = formatted_text.replace('\n', '<br>')
-            # Remove any double <br> tags
-            formatted_text = re.sub(r'(<br>\s*){3,}', '<br><br>', formatted_text)
+            # Remove markdown symbols for clean text
+            formatted_text = re.sub(r'#{1,6}\s*', '', formatted_text)  # Remove headers
+            formatted_text = re.sub(r'\*\*(.*?)\*\*', r'\1', formatted_text)  # Remove bold
+            formatted_text = re.sub(r'\*(.*?)\*', r'\1', formatted_text)  # Remove italic
+            formatted_text = formatted_text.replace('\n\n', '\n\n')  # Keep paragraph breaks
+            formatted_text = formatted_text.strip()
             
             if not formatted_text.startswith('<p>'):
                 formatted_text = f'<p>{formatted_text}</p>'
@@ -387,36 +384,42 @@ if enhanced_ai_analysis:
                             Powered by AI + Historical Data Analysis • {context_sources} Multi-Year Data Points
                         </div>
                     </div>
-                    
-                    <div style="
-                        color: #2d3748; 
-                        line-height: 1.8; 
-                        font-size: 17px;
-                        background: rgba(255, 255, 255, 0.9);
-                        padding: 32px;
-                        border-radius: 15px;
-                        margin: 0 -8px;
-                        box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
-                        border-left: 4px solid #38b2ac;
-                    ">
-                        {formatted_text}
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Display clean text content
+                st.markdown(f"""
+                <div style="
+                    color: #2d3748; 
+                    line-height: 1.8; 
+                    font-size: 17px;
+                    background: rgba(255, 255, 255, 0.9);
+                    padding: 32px;
+                    border-radius: 15px;
+                    margin: 20px 0;
+                    box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
+                    border-left: 4px solid #38b2ac;
+                    white-space: pre-wrap;
+                ">
+            {formatted_text}
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(135deg, rgba(56, 178, 172, 0.1) 0%, rgba(72, 187, 120, 0.1) 100%);
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-top: 20px;
+                    border: 1px solid rgba(56, 178, 172, 0.2);
+                ">
+                    <div style="font-weight: 600; color: #2d3748; margin-bottom: 8px;">
+                        📊 Analysis Methodology
                     </div>
-                    
-                    <div style="
-                        background: linear-gradient(135deg, rgba(56, 178, 172, 0.1) 0%, rgba(72, 187, 120, 0.1) 100%);
-                        border-radius: 12px;
-                        padding: 20px;
-                        margin-top: 20px;
-                        border: 1px solid rgba(56, 178, 172, 0.2);
-                    ">
-                        <div style="font-weight: 600; color: #2d3748; margin-bottom: 8px;">
-                            📊 Analysis Methodology
-                        </div>
-                        <div style="color: #4a5568; font-size: 15px; line-height: 1.6;">
-                            This report combines current financial metrics with {context_sources} historical data points 
-                            spanning multiple years. Our RAG-enhanced AI system retrieved relevant historical patterns 
-                            and integrated them with real-time market data to provide comprehensive investment insights.
-                        </div>
+                    <div style="color: #4a5568; font-size: 15px; line-height: 1.6;">
+                        This report combines current financial metrics with {context_sources} historical data points 
+                        spanning multiple years. Our RAG-enhanced AI system retrieved relevant historical patterns 
+                        and integrated them with real-time market data to provide comprehensive investment insights.
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
@@ -444,35 +447,41 @@ if enhanced_ai_analysis:
                             Professional insights based on current financial data
                         </div>
                     </div>
-                    
-                    <div style="
-                        color: #2d3748; 
-                        line-height: 1.8; 
-                        font-size: 17px;
-                        background: rgba(255, 255, 255, 0.9);
-                        padding: 32px;
-                        border-radius: 15px;
-                        margin: 0 -8px;
-                        box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
-                        border-left: 4px solid #667eea;
-                    ">
-                        {formatted_text}
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Display clean text content
+                st.markdown(f"""
+                <div style="
+                    color: #2d3748; 
+                    line-height: 1.8; 
+                    font-size: 17px;
+                    background: rgba(255, 255, 255, 0.9);
+                    padding: 32px;
+                    border-radius: 15px;
+                    margin: 20px 0;
+                    box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
+                    border-left: 4px solid #667eea;
+                    white-space: pre-wrap;
+                ">
+            {formatted_text}
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown(f"""
+                <div style="
+                    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(159, 122, 234, 0.1) 100%);
+                    border-radius: 12px;
+                    padding: 20px;
+                    margin-top: 20px;
+                    border: 1px solid rgba(102, 126, 234, 0.2);
+                ">
+                    <div style="font-weight: 600; color: #2d3748; margin-bottom: 8px;">
+                        📋 Analysis Note
                     </div>
-                    
-                    <div style="
-                        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(159, 122, 234, 0.1) 100%);
-                        border-radius: 12px;
-                        padding: 20px;
-                        margin-top: 20px;
-                        border: 1px solid rgba(102, 126, 234, 0.2);
-                    ">
-                        <div style="font-weight: 600; color: #2d3748; margin-bottom: 8px;">
-                            📋 Analysis Note
-                        </div>
-                        <div style="color: #4a5568; font-size: 15px; line-height: 1.6;">
-                            This analysis is based on current financial data and market metrics. 
-                            For enhanced insights with historical context, multi-year financial data is required.
-                        </div>
+                    <div style="color: #4a5568; font-size: 15px; line-height: 1.6;">
+                        This analysis is based on current financial data and market metrics. 
+                        For enhanced insights with historical context, multi-year financial data is required.
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
