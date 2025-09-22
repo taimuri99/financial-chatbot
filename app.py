@@ -474,7 +474,8 @@ if st.session_state.get('show_ai_analysis', False):
                         ">
                             {formatted_text}
                         </div>
-                    </div>""", unsafe_allow_html=True)
+                    </div>""")
+                    st.markdown(html_content, unsafe_allow_html=True)
                     
                     # Methodology Footer
                     st.markdown(f"""
@@ -493,8 +494,7 @@ if st.session_state.get('show_ai_analysis', False):
                             Real-time market data integrated with historical patterns using AI-powered retrieval and synthesis.
                         </div>
                     </div>
-                    """)
-                    st.markdown(html_content, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
 
                 else:
                     st.success("✅ AI Financial Analysis Complete")
