@@ -408,11 +408,11 @@ if st.session_state.get('show_ai_analysis', False):
                     st.stop()
 
                 # Clean markdown symbols
-                # formatted_text = re.sub(r'#{1,6}\s*', '', formatted_text)
-                # formatted_text = re.sub(r'\*\*(.*?)\*\*', r'\1', formatted_text)
-                # formatted_text = re.sub(r'\*(.*?)\*', r'\1', formatted_text)
-                # formatted_text = formatted_text.replace('*', '')  # Remove any remaining asterisks
-                # formatted_text = formatted_text.strip()
+                formatted_text = re.sub(r'#{1,6}\s*', '', formatted_text)
+                formatted_text = re.sub(r'\*\*(.*?)\*\*', r'\1', formatted_text)
+                formatted_text = re.sub(r'\*(.*?)\*', r'\1', formatted_text)
+                formatted_text = formatted_text.replace('*', '')  # Remove any remaining asterisks
+                formatted_text = formatted_text.strip()
 
                 # Ensure we have actual content
                 if len(formatted_text) < 50:
@@ -470,7 +470,8 @@ if st.session_state.get('show_ai_analysis', False):
                             line-height: 1.9;
                             font-size: 16px;
                             white-space: pre-wrap;
-                        ">{formatted_text}
+                        ">
+                                {formatted_text}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -544,7 +545,8 @@ if st.session_state.get('show_ai_analysis', False):
                             line-height: 1.9;
                             font-size: 16px;
                             white-space: pre-wrap;
-                        ">{formatted_text}
+                        ">
+                                {formatted_text}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
