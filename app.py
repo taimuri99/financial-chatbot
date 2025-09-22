@@ -471,7 +471,7 @@ if st.session_state.get('show_ai_analysis', False):
                             font-size: 16px;
                             white-space: pre-wrap;
                         ">
-                            <pre style="white-space: pre-wrap; margin: 0;">{formatted_text}</pre>
+                        {formatted_text}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
@@ -546,7 +546,7 @@ if st.session_state.get('show_ai_analysis', False):
                             font-size: 16px;
                             white-space: pre-wrap;
                         ">
-                            <pre style="white-space: pre-wrap; margin: 0;">{formatted_text}</pre>
+                         {formatted_text}
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
