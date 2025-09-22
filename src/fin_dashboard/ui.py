@@ -175,7 +175,7 @@ def display_company_info(finnhub_data):
     """, unsafe_allow_html=True)
 
 def display_financial_metrics(finnhub_data):
-    """UPGRADED: Display financial metrics with advanced visualizations"""
+    """Display financial metrics with advanced visualizations"""
     if not finnhub_data:
         st.warning("⚠️ No financial metrics available")
         return
@@ -228,11 +228,6 @@ def display_financial_metrics(finnhub_data):
     historical_data = finnhub_data.get('historical_prices', {})
     if historical_data and historical_data.get('dates') and len(historical_data['dates']) > 0:
         
-        # Chart type selector
-        chart_cols = st.columns([1, 1, 2])
-        with chart_cols[0]:
-            chart_type = st.selectbox("Chart Type", ["Line + Volume"], key="price_chart_type")
-        
         # Always create the card container first
         st.markdown("""
         <div class="report-card">
@@ -242,18 +237,17 @@ def display_financial_metrics(finnhub_data):
         # Chart rendering in isolated try-catch
         chart_rendered = False
         
-        if chart_type == "Line + Volume":
-            try:
-                price_chart = create_price_chart(
-                    historical_data, 
-                    finnhub_data.get('name', 'Company'),
-                    'TICKER'
-                )
-                if price_chart:
-                    st.plotly_chart(price_chart, use_container_width=True)
-                    chart_rendered = True
-            except Exception as e:
-                st.error(f"Line chart error: {str(e)}")
+        try:
+            price_chart = create_price_chart(
+                historical_data, 
+                finnhub_data.get('name', 'Company'),
+                'TICKER'
+            )
+            if price_chart:
+                st.plotly_chart(price_chart, use_container_width=True)
+                chart_rendered = True
+        except Exception as e:
+            st.error(f"Line chart error: {str(e)}")
         
         if not chart_rendered:
             st.info("Chart could not be displayed. Please try the other chart type.")
