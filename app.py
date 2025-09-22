@@ -463,17 +463,17 @@ if st.session_state.get('show_ai_analysis', False):
                             </div>
                         </div>
                         
-                        <div style="
-                            background: blue;
-                            padding: 35px;
-                            color: #2d3748;
-                            line-height: 1.9;
-                            font-size: 16px;
-                            white-space: pre-wrap;
-                        ">
-                        {formatted_text}
+                            <div style="
+                                background: white;
+                                padding: 35px;
+                                color: #2d3748;
+                                line-height: 1.9;
+                                font-size: 16px;
+                                white-space: pre-wrap;
+                            ">
+                            {formatted_text}
                         </div>
-                    </div>
+                        </div>
                     """, unsafe_allow_html=True)
                     
                     # Methodology Footer
@@ -539,7 +539,7 @@ if st.session_state.get('show_ai_analysis', False):
                         </div>
                         
                         <div style="
-                            background: blue;
+                            background: white;
                             padding: 35px;
                             color: #2d3748;
                             line-height: 1.9;
