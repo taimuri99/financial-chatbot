@@ -272,10 +272,10 @@ if view_reports:
             st.code(traceback.format_exc())
 
 # ---------------------------
-# Enhanced AI Analysis Workflow (Replace both AI and RAG sections)
-# ---------------------------
-# ---------------------------
 # Enhanced AI Analysis Workflow with User Choice
+# ---------------------------
+# ---------------------------
+# Enhanced AI Analysis Workflow with Sub-buttons
 # ---------------------------
 if enhanced_ai_analysis:
     # Check if we need fresh data for new ticker
@@ -292,246 +292,270 @@ if enhanced_ai_analysis:
             st.session_state.sec_data = sec_result.get("data", [])
             st.session_state.ticker_symbol = current_ticker
     
-    # Check available data and show analysis options
+    # Check available data
     multi_year_data = st.session_state.finnhub_data.get('multi_year_data', {})
     has_historical_data = bool(multi_year_data.get('financial_data'))
     
-    if has_historical_data:
-        analysis_type = st.radio(
-            "Choose Analysis Type:",
-            ["🧠 RAG-Enhanced (Historical Context)", "🤖 Standard AI (Current Data Only)"],
-            help="RAG-Enhanced uses multi-year historical data for deeper insights",
-            key="analysis_type_choice"
-        )
-        force_standard = analysis_type == "🤖 Standard AI (Current Data Only)"
-    else:
-        st.info("📋 Only Standard AI analysis available (no multi-year historical data found)")
-        analysis_type = "🤖 Standard AI (Current Data Only)"
-        force_standard = True
-    
+    # User query input (always show)
     user_query = st.text_area(
         "Ask a question about this company:",
         "Provide a comprehensive analysis of the company's financial performance, including historical trends and future outlook.",
-        key="ai_query",
+        key="enhanced_ai_query",  # Different key to avoid conflicts
         height=100
     )
     
-    try:
-        query = st.session_state.get("ai_query", "Provide a comprehensive financial analysis with historical context and predictive insights.")
-        
-        # Prepare context data
-        context_data = {
-            "company_info": st.session_state.finnhub_data,
-            "sec_filings": st.session_state.sec_data,
-            "ratios": compute_ratios(st.session_state.finnhub_data),
-            "trends": summarize_trends(st.session_state.finnhub_data),
-            "ticker": st.session_state.ticker_symbol or ticker.upper(),
-            "force_standard": force_standard  # Add flag to force standard analysis
-        }
-        
-        # Determine analysis method based on user choice
-        if not force_standard and has_historical_data:
-            with st.spinner("🧠 Generating RAG-enhanced analysis with historical context..."):
-                progress_bar = st.progress(0)
-                status_text = st.empty()
-                
-                status_text.text("📊 Processing multi-year financial data...")
-                progress_bar.progress(25)
-                
-                status_text.text("🔍 Creating document vectors...")
-                progress_bar.progress(50)
-                
-                status_text.text("🧠 Retrieving relevant historical context...")
-                progress_bar.progress(75)
-                
-                enhanced_response = get_enhanced_ai_analysis(context_data, query)
-                
-                status_text.text("✅ RAG-enhanced analysis complete!")
-                progress_bar.progress(100)
-                
-                # Clear progress indicators
-                progress_bar.empty()
-                status_text.empty()
-        else:
-            with st.spinner("🤖 Generating standard AI analysis..."):
-                enhanced_response = get_enhanced_ai_analysis(context_data, query)
-        
-        st.session_state.analysis_data = enhanced_response
-        
-        # Display results with professional styling
-        if st.session_state.analysis_data:
-            analysis_result = st.session_state.analysis_data
-            method_used = analysis_result.get("method", "Unknown")
-            context_sources = analysis_result.get("context_sources", 0)
-            analysis_text = analysis_result.get("analysis", "No analysis available")
-            
-            # Clean text formatting
-            import re
-            formatted_text = str(analysis_text)
-            formatted_text = re.sub(r'#{1,6}\s*', '', formatted_text)
-            formatted_text = re.sub(r'\*\*(.*?)\*\*', r'\1', formatted_text)
-            formatted_text = re.sub(r'\*(.*?)\*', r'\1', formatted_text)
-            formatted_text = formatted_text.strip()
-            
-            # Professional Financial Report Display
-            if method_used == "RAG-Enhanced":
-                st.success(f"✅ Enhanced Analysis Complete • {context_sources} Historical Data Points")
-                
-                # Executive Summary Header
-                st.markdown(f"""
-                <div style="
-                    background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%);
-                    color: white;
-                    padding: 30px;
-                    border-radius: 15px 15px 0 0;
-                    margin: 20px 0 0 0;
-                ">
-                    <div style="font-size: 28px; font-weight: 800; margin-bottom: 8px;">
-                        📊 FINANCIAL INTELLIGENCE REPORT
-                    </div>
-                    <div style="font-size: 16px; opacity: 0.9; font-weight: 500;">
-                        Enhanced Analysis • {context_sources} Multi-Year Data Points • RAG-Powered Insights
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Main Analysis Content
-                st.markdown(f"""
-                <div style="
-                    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-                    border-left: 6px solid #38b2ac;
-                    padding: 0;
-                    margin: 0 0 20px 0;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-                ">
-                    <div style="
-                        background: rgba(56, 178, 172, 0.1);
-                        padding: 20px 30px;
-                        border-bottom: 2px solid rgba(56, 178, 172, 0.2);
-                    ">
-                        <div style="font-size: 20px; font-weight: 700; color: #2d3748; margin-bottom: 5px;">
-                            📈 EXECUTIVE ANALYSIS
-                        </div>
-                        <div style="font-size: 14px; color: #4a5568; font-weight: 500;">
-                            Historical Context Integration & Predictive Modeling
-                        </div>
-                    </div>
-                    
-                    <div style="
-                        background: white;
-                        padding: 35px;
-                        color: #2d3748;
-                        line-height: 1.9;
-                        font-size: 16px;
-                        white-space: pre-wrap;
-                    ">
-{formatted_text}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Methodology Footer
-                st.markdown(f"""
-                <div style="
-                    background: linear-gradient(135deg, #38b2ac 0%, #319795 100%);
-                    color: white;
-                    padding: 25px 30px;
-                    border-radius: 0 0 15px 15px;
-                    margin: 0;
-                ">
-                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
-                        🔬 METHODOLOGY & DATA SOURCES
-                    </div>
-                    <div style="font-size: 14px; opacity: 0.95; line-height: 1.6;">
-                        Advanced RAG system analyzed {context_sources} historical data points spanning multiple fiscal years. 
-                        Real-time market data integrated with historical patterns using AI-powered retrieval and synthesis.
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-
-            else:
-                st.success("✅ AI Financial Analysis Complete")
-                
-                # Standard Analysis Header
-                st.markdown(f"""
-                <div style="
-                    background: linear-gradient(135deg, #553c9a 0%, #667eea 100%);
-                    color: white;
-                    padding: 30px;
-                    border-radius: 15px 15px 0 0;
-                    margin: 20px 0 0 0;
-                ">
-                    <div style="font-size: 28px; font-weight: 800; margin-bottom: 8px;">
-                        🤖 AI FINANCIAL REPORT
-                    </div>
-                    <div style="font-size: 16px; opacity: 0.9; font-weight: 500;">
-                        Professional Analysis • Current Market Data • AI-Generated Insights
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Main Analysis Content
-                st.markdown(f"""
-                <div style="
-                    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
-                    border-left: 6px solid #667eea;
-                    padding: 0;
-                    margin: 0 0 20px 0;
-                    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-                ">
-                    <div style="
-                        background: rgba(102, 126, 234, 0.1);
-                        padding: 20px 30px;
-                        border-bottom: 2px solid rgba(102, 126, 234, 0.2);
-                    ">
-                        <div style="font-size: 20px; font-weight: 700; color: #2d3748; margin-bottom: 5px;">
-                            📋 FINANCIAL ASSESSMENT
-                        </div>
-                        <div style="font-size: 14px; color: #4a5568; font-weight: 500;">
-                            Current Market Analysis & Performance Evaluation
-                        </div>
-                    </div>
-                    
-                    <div style="
-                        background: white;
-                        padding: 35px;
-                        color: #2d3748;
-                        line-height: 1.9;
-                        font-size: 16px;
-                        white-space: pre-wrap;
-                    ">
-{formatted_text}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # Standard Analysis Footer
-                st.markdown(f"""
-                <div style="
-                    background: linear-gradient(135deg, #667eea 0%, #553c9a 100%);
-                    color: white;
-                    padding: 25px 30px;
-                    border-radius: 0 0 15px 15px;
-                    margin: 0;
-                ">
-                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
-                        📊 ANALYSIS SCOPE
-                    </div>
-                    <div style="font-size: 14px; opacity: 0.95; line-height: 1.6;">
-                        Analysis based on current financial metrics and real-time market data. 
-                        For enhanced historical context and predictive modeling, multi-year data is required.
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.error("❌ Could not generate enhanced analysis. Please try again.")
+    # Analysis type selection with sub-buttons
+    st.markdown("### Choose Analysis Method:")
     
-    except Exception as e:
-        st.error(f"❌ Enhanced Analysis error: {str(e)}")
-        st.info("💡 Tip: Try refreshing the page or check your API keys in Streamlit secrets.")
-        with st.expander("Debug Information"):
-            st.code(traceback.format_exc())
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if has_historical_data:
+            run_rag_analysis = st.button(
+                "🧠 RAG-Enhanced Analysis", 
+                help="Uses historical data + AI for deep insights",
+                use_container_width=True,
+                type="primary"
+            )
+        else:
+            st.button(
+                "🧠 RAG-Enhanced Analysis", 
+                help="No historical data available",
+                use_container_width=True,
+                disabled=True
+            )
+            run_rag_analysis = False
+    
+    with col2:
+        run_standard_analysis = st.button(
+            "🤖 Standard AI Analysis",
+            help="Current financial data + AI insights",
+            use_container_width=True
+        )
+    
+    # Show data availability info
+    if has_historical_data:
+        st.info(f"✅ Historical data available - RAG analysis will use multi-year financial records")
+    else:
+        st.warning("⚠️ No historical data found - Only standard analysis available")
+    
+    # Process analysis based on button clicked
+    if run_rag_analysis or run_standard_analysis:
+        try:
+            query = user_query or "Provide a comprehensive financial analysis with historical context and predictive insights."
+            
+            # Prepare context data
+            context_data = {
+                "company_info": st.session_state.finnhub_data,
+                "sec_filings": st.session_state.sec_data,
+                "ratios": compute_ratios(st.session_state.finnhub_data),
+                "trends": summarize_trends(st.session_state.finnhub_data),
+                "ticker": st.session_state.ticker_symbol or ticker.upper(),
+                "force_standard": run_standard_analysis  # Force standard if standard button clicked
+            }
+            
+            # Run analysis with appropriate spinner
+            if run_rag_analysis:
+                with st.spinner("🧠 Generating RAG-enhanced analysis with historical context..."):
+                    progress_bar = st.progress(0)
+                    status_text = st.empty()
+                    
+                    status_text.text("📊 Processing multi-year financial data...")
+                    progress_bar.progress(25)
+                    
+                    status_text.text("🔍 Creating document vectors...")
+                    progress_bar.progress(50)
+                    
+                    status_text.text("🧠 Retrieving relevant historical context...")
+                    progress_bar.progress(75)
+                    
+                    enhanced_response = get_enhanced_ai_analysis(context_data, query)
+                    
+                    status_text.text("✅ RAG-enhanced analysis complete!")
+                    progress_bar.progress(100)
+                    
+                    # Clear progress indicators
+                    progress_bar.empty()
+                    status_text.empty()
+            else:
+                with st.spinner("🤖 Generating standard AI analysis..."):
+                    enhanced_response = get_enhanced_ai_analysis(context_data, query)
+            
+            st.session_state.analysis_data = enhanced_response
+            
+            # Display results with professional styling
+            if st.session_state.analysis_data:
+                analysis_result = st.session_state.analysis_data
+                method_used = analysis_result.get("method", "Unknown")
+                context_sources = analysis_result.get("context_sources", 0)
+                analysis_text = analysis_result.get("analysis", "No analysis available")
+                
+                # Clean text formatting
+                import re
+                formatted_text = str(analysis_text)
+                formatted_text = re.sub(r'#{1,6}\s*', '', formatted_text)
+                formatted_text = re.sub(r'\*\*(.*?)\*\*', r'\1', formatted_text)
+                formatted_text = re.sub(r'\*(.*?)\*', r'\1', formatted_text)
+                formatted_text = formatted_text.strip()
+                
+                # Professional Financial Report Display
+                if method_used == "RAG-Enhanced":
+                    st.success(f"✅ Enhanced Analysis Complete • {context_sources} Historical Data Points")
+                    
+                    # Executive Summary Header
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(135deg, #1a365d 0%, #2d3748 100%);
+                        color: white;
+                        padding: 30px;
+                        border-radius: 15px 15px 0 0;
+                        margin: 20px 0 0 0;
+                    ">
+                        <div style="font-size: 28px; font-weight: 800; margin-bottom: 8px;">
+                            📊 FINANCIAL INTELLIGENCE REPORT
+                        </div>
+                        <div style="font-size: 16px; opacity: 0.9; font-weight: 500;">
+                            Enhanced Analysis • {context_sources} Multi-Year Data Points • RAG-Powered Insights
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Main Analysis Content
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+                        border-left: 6px solid #38b2ac;
+                        padding: 0;
+                        margin: 0 0 20px 0;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                    ">
+                        <div style="
+                            background: rgba(56, 178, 172, 0.1);
+                            padding: 20px 30px;
+                            border-bottom: 2px solid rgba(56, 178, 172, 0.2);
+                        ">
+                            <div style="font-size: 20px; font-weight: 700; color: #2d3748; margin-bottom: 5px;">
+                                📈 EXECUTIVE ANALYSIS
+                            </div>
+                            <div style="font-size: 14px; color: #4a5568; font-weight: 500;">
+                                Historical Context Integration & Predictive Modeling
+                            </div>
+                        </div>
+                        
+                        <div style="
+                            background: white;
+                            padding: 35px;
+                            color: #2d3748;
+                            line-height: 1.9;
+                            font-size: 16px;
+                            white-space: pre-wrap;
+                        ">
+{formatted_text}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Methodology Footer
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(135deg, #38b2ac 0%, #319795 100%);
+                        color: white;
+                        padding: 25px 30px;
+                        border-radius: 0 0 15px 15px;
+                        margin: 0;
+                    ">
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                            🔬 METHODOLOGY & DATA SOURCES
+                        </div>
+                        <div style="font-size: 14px; opacity: 0.95; line-height: 1.6;">
+                            Advanced RAG system analyzed {context_sources} historical data points spanning multiple fiscal years. 
+                            Real-time market data integrated with historical patterns using AI-powered retrieval and synthesis.
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
+                else:
+                    st.success("✅ AI Financial Analysis Complete")
+                    
+                    # Standard Analysis Header
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(135deg, #553c9a 0%, #667eea 100%);
+                        color: white;
+                        padding: 30px;
+                        border-radius: 15px 15px 0 0;
+                        margin: 20px 0 0 0;
+                    ">
+                        <div style="font-size: 28px; font-weight: 800; margin-bottom: 8px;">
+                            🤖 AI FINANCIAL REPORT
+                        </div>
+                        <div style="font-size: 16px; opacity: 0.9; font-weight: 500;">
+                            Professional Analysis • Current Market Data • AI-Generated Insights
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Main Analysis Content
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+                        border-left: 6px solid #667eea;
+                        padding: 0;
+                        margin: 0 0 20px 0;
+                        box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+                    ">
+                        <div style="
+                            background: rgba(102, 126, 234, 0.1);
+                            padding: 20px 30px;
+                            border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+                        ">
+                            <div style="font-size: 20px; font-weight: 700; color: #2d3748; margin-bottom: 5px;">
+                                📋 FINANCIAL ASSESSMENT
+                            </div>
+                            <div style="font-size: 14px; color: #4a5568; font-weight: 500;">
+                                Current Market Analysis & Performance Evaluation
+                            </div>
+                        </div>
+                        
+                        <div style="
+                            background: white;
+                            padding: 35px;
+                            color: #2d3748;
+                            line-height: 1.9;
+                            font-size: 16px;
+                            white-space: pre-wrap;
+                        ">
+{formatted_text}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Standard Analysis Footer
+                    st.markdown(f"""
+                    <div style="
+                        background: linear-gradient(135deg, #667eea 0%, #553c9a 100%);
+                        color: white;
+                        padding: 25px 30px;
+                        border-radius: 0 0 15px 15px;
+                        margin: 0;
+                    ">
+                        <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                            📊 ANALYSIS SCOPE
+                        </div>
+                        <div style="font-size: 14px; opacity: 0.95; line-height: 1.6;">
+                            Analysis based on current financial metrics and real-time market data. 
+                            For enhanced historical context and predictive modeling, multi-year data is required.
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+            else:
+                st.error("❌ Could not generate enhanced analysis. Please try again.")
+        
+        except Exception as e:
+            st.error(f"❌ Enhanced Analysis error: {str(e)}")
+            st.info("💡 Tip: Try refreshing the page or check your API keys in Streamlit secrets.")
+            with st.expander("Debug Information"):
+                st.code(traceback.format_exc())
 # ---------------------------
 # Welcome Screen
 # ---------------------------
