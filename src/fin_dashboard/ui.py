@@ -5,7 +5,6 @@ from .charts import (
     create_ratios_chart, 
     create_metrics_gauge_chart,
     create_trend_chart,
-    create_candlestick_chart,
     create_financial_trends_chart,
     create_performance_comparison,
     create_portfolio_summary

@@ -12,8 +12,7 @@ from src.fin_dashboard.ui import (
     display_portfolio_summary
 )
 from src.fin_dashboard.datasources import get_finnhub_company_data, get_sec_filings
-from src.fin_dashboard.llm import get_simple_ai_analysis, get_enhanced_ai_analysis 
-from src.fin_dashboard.rag import generate_rag_enhanced_analysis, get_predictive_insights
+from src.fin_dashboard.llm import get_enhanced_ai_analysis, get_predictive_insights
 from src.fin_dashboard.analytics import compute_ratios, summarize_trends
 from src.fin_dashboard.config import FINNHUB_API_KEY
 
