@@ -464,7 +464,7 @@ if st.session_state.get('show_ai_analysis', False):
                         </div>
                         
                         <div style="
-                            background: white;
+                            background: blue;
                             padding: 35px;
                             color: #2d3748;
                             line-height: 1.9;
@@ -539,7 +539,7 @@ if st.session_state.get('show_ai_analysis', False):
                         </div>
                         
                         <div style="
-                            background: white;
+                            background: blue;
                             padding: 35px;
                             color: #2d3748;
                             line-height: 1.9;
