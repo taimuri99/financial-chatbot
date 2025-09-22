@@ -567,7 +567,7 @@ if st.session_state.get('show_ai_analysis', False):
 # ---------------------------
 # Welcome Screen
 # ---------------------------
-if not view_reports and not enhanced_ai_analysis:
+if not view_reports and not st.session_state.get('show_ai_analysis', False):
     # Welcome message with feature highlights 
     st.markdown('<div class="report-card">', unsafe_allow_html=True)
     st.markdown('<div class="card-title">🎯 Welcome to the Financial Analysis Platform</div>', unsafe_allow_html=True)
