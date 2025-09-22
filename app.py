@@ -350,9 +350,6 @@ if enhanced_ai_analysis:
             # Format the analysis text
             import re
             formatted_text = str(analysis_text)
-            formatted_text = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', formatted_text)
-            formatted_text = formatted_text.replace('\n\n', '</p><p>')
-            formatted_text = formatted_text.replace('\n', '<br>')
             formatted_text = re.sub(r'^[\s]*[-•*]\s*', '• ', formatted_text, flags=re.MULTILINE)
             
             if not formatted_text.startswith('<p>'):
