@@ -465,8 +465,9 @@ if st.session_state.get('show_ai_analysis', False):
                         </div>
                         
                         <div style="
-                            background: #ffffff;
+                            background: white;
                             padding: 35px;
+                            color: #2d3748;
                             line-height: 1.9;
                             font-size: 16px;
                             white-space: pre-wrap;
