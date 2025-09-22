@@ -397,14 +397,27 @@ if st.session_state.get('show_ai_analysis', False):
                 method_used = analysis_result.get("method", "Unknown")
                 context_sources = analysis_result.get("context_sources", 0)
                 analysis_text = analysis_result.get("analysis", "No analysis available")
-                
-                # Clean text formatting
+            
+                # Clean text formatting - more robust approach
                 import re
                 formatted_text = str(analysis_text)
+
+                # Debug: Check what we're getting
+                if formatted_text.startswith('<div') or 'long_conversation_reminder' in formatted_text:
+                    st.error("❌ Analysis text corrupted. Retrying...")
+                    st.stop()
+
+                # Clean markdown symbols
                 formatted_text = re.sub(r'#{1,6}\s*', '', formatted_text)
                 formatted_text = re.sub(r'\*\*(.*?)\*\*', r'\1', formatted_text)
                 formatted_text = re.sub(r'\*(.*?)\*', r'\1', formatted_text)
+                formatted_text = formatted_text.replace('*', '')  # Remove any remaining asterisks
                 formatted_text = formatted_text.strip()
+
+                # Ensure we have actual content
+                if len(formatted_text) < 50:
+                    st.error("❌ Analysis text too short. Please try again.")
+                    st.stop()
                 
                 # Professional Financial Report Display
                 if method_used == "RAG-Enhanced":

@@ -1,6 +1,6 @@
 import streamlit as st
 
-# API Keys from Streamlit secrets
+# API Keys from Streamlit secrets, safely on deployment
 FINNHUB_API_KEY = st.secrets.get("FINNHUB_API_KEY", "")
 GOOGLE_API_KEY = st.secrets.get("GEMINI_API_KEY", "")
 
