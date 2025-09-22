@@ -413,11 +413,6 @@ if st.session_state.get('show_ai_analysis', False):
                 formatted_text = re.sub(r'\*(.*?)\*', r'\1', formatted_text)
                 formatted_text = formatted_text.replace('*', '')  # Remove any remaining asterisks
                 formatted_text = formatted_text.strip()
-
-                # Ensure we have actual content
-                if len(formatted_text) < 50:
-                    st.error("❌ Analysis text too short. Please try again.")
-                    st.stop()
                 
                 # Professional Financial Report Display
                 if method_used == "RAG-Enhanced":
