@@ -8,8 +8,6 @@ A **streamlined financial analysis platform** combining **real-time market data 
 
 ---
 
----
-
 [DEPLOYMENT](https://financial-chatbot-taimurahmadkhan.streamlit.app/)
 
 ---
