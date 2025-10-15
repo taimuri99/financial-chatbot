@@ -37,7 +37,6 @@ Source (src/fin_dashboard/)
 4) charts.py → Visualizations (analytics) main page.
 5) llm.py → Gemini AI LLM pipeline for question answering including RAG advanced AI analysis option with historical data.
 6) analytics.py → Financial ratios, benchmarks, comparisons, formatting
-7) analytics.py → Financial ratios, benchmarks, comparisons.
 
 🔄 Workflow Diagram
 
