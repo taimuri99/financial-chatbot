@@ -15,7 +15,13 @@ genai.configure(api_key=GOOGLE_API_KEY)
 @st.cache_resource
 def init_gemini_model():
     """Initialize Gemini model with caching"""
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    safety_settings = [
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"}
+    ]
+    model = genai.GenerativeModel('models/gemini-2.5-pro', safety_settings=safety_settings)
     return model
 
 def get_simple_ai_analysis(context_data, user_query):
