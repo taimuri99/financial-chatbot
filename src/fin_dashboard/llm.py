@@ -15,7 +15,7 @@ genai.configure(api_key=GOOGLE_API_KEY)
 @st.cache_resource
 def init_gemini_model():
     """Initialize Gemini model with caching"""
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    model = genai.GenerativeModel('gemini-pro')
     return model
 
 def get_simple_ai_analysis(context_data, user_query):
