@@ -122,7 +122,7 @@ st.sidebar.header("⚙️ Controls")
 # Debug dropdown
 debug_option = st.sidebar.selectbox(
     "🔧 Debug Tools",
-    ["None", "🔍 Debug Finnhub API", "🔍 Debug SEC API", "🔍 Clear Cache", "🔍 Debug Gemini Models"],
+    ["🏘️ Home", "🔍 Debug Finnhub API", "🔍 Debug SEC API", "🔍 Clear Cache", "🔍 Debug Gemini Models"],
     key="debug_selector"
 )
 
