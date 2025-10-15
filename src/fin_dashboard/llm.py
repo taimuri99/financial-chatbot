@@ -62,7 +62,7 @@ def get_simple_ai_analysis(context_data, user_query):
         
         # Create the full prompt
         full_prompt = f"""
-        You are a professional financial analyst. Based on the following company data, please provide a comprehensive analysis.
+        You are a professional financial analyst. Based on the following company data, please provide a comprehensive analysis. You are not providing investment advice but more of investment conditions.
         
         {context_text}
         
