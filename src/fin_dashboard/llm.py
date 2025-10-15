@@ -62,7 +62,7 @@ def get_simple_ai_analysis(context_data, user_query):
         
         # Create the full prompt
         full_prompt = f"""
-        You are a professional financial analyst. Based on the following company data, please provide a comprehensive analysis. You are not providing investment advice but more of investment conditions.
+        You are a professional financial analyst. Based on the following company data, please provide a comprehensive analysis. You are not providing investment advice.
         
         {context_text}
         
@@ -72,7 +72,7 @@ def get_simple_ai_analysis(context_data, user_query):
         1. Key financial insights
         2. Risk factors and opportunities
         3. Market position assessment
-        4. Investment considerations
+        4. Stock performance considerations
         
         Keep your response informative, well-structured, and professional.
         """
