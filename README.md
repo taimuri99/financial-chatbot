@@ -81,5 +81,5 @@ Architecture of project can be found in DIRECTORY.md
 2. **Google Gemini API**: Free tier
    - Get key from [Google AI Studio](https://makersuite.google.com/app/apikey)
    - Add to Streamlit secrets as `GEMINI_API_KEY`
-
+   - Gemini model - upgrade
 ---
