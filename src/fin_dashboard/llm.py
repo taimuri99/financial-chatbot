@@ -21,7 +21,7 @@ def init_gemini_model():
         {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
         {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"}
     ]
-    model = genai.GenerativeModel('models/gemini-2.5-pro', safety_settings=safety_settings)
+    model = genai.GenerativeModel('models/gemini-2.0-flash', safety_settings=safety_settings)
     return model
 
 def get_simple_ai_analysis(context_data, user_query):
