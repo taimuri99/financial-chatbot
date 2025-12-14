@@ -11,6 +11,8 @@ try:
     from groq import Groq
 except ImportError:
     Groq = None # Makes Groq optional if not installed
+
+
 # Configure Gemini
 genai.configure(api_key=GOOGLE_API_KEY)
 @st.cache_resource
@@ -42,7 +44,7 @@ def generate_ai_content(prompt, model_type='gemini'):
     elif model_type == 'groq' and Groq is not None and GROQ_API_KEY:
         client = Groq(api_key=GROQ_API_KEY)
         completion = client.chat.completions.create(
-            model="llama-3.1-70b-versatile",
+            model="llama-3.3-70b-versatile",
             messages=[{"role": "user", "content": prompt}],
             temperature=TEMPERATURE,
             max_tokens=4000,
