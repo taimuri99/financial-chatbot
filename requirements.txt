@@ -15,7 +15,7 @@ plotly>=5.0.0
 altair>=4.0.0
 
 # --- Historical Data ---
-yfinance>=0.2.18
+yfinance>=0.2.40
 
 # --- Lightweight ML (Streamlit Compatible) ---
 scikit-learn>=1.3.0

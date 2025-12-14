@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from .config import FINNHUB_API_KEY
 import streamlit as st
 import logging
+import time  # For retries
 
 # ------------------------------
 # Logging setup
@@ -129,86 +130,78 @@ def get_yahoo_historical_data(symbol: str, period: str = "1mo"):
 # ------------------------------
 # Multi-Year Financial Data for RAG
 # ------------------------------
-@st.cache_data(ttl=7200)  # Cache for 2 hours
+@st.cache_data(ttl=7200) # Cache for 2 hours
 def get_multi_year_financial_data(symbol: str):
     """
     Fetch multi-year financial data for RAG system
-    Returns comprehensive historical financial metrics
+    Prioritizes Finnhub (stable) with yFinance fallback + anti-block measures
     """
+    financial_timeline = {}
+    ratios_timeline = {}
+    error = None
+
     try:
-        ticker = yf.Ticker(symbol)
-        
-        # Get financial statements
-        financials = ticker.financials
-        balance_sheet = ticker.balance_sheet
-        cashflow = ticker.cashflow
-        
-        # Get key statistics and info
-        info = ticker.info
-        
-        # Process data into time series
-        financial_timeline = {}
-        
-        if not financials.empty:
-            # Revenue data
-            if 'Total Revenue' in financials.index:
-                revenues = financials.loc['Total Revenue'].dropna()
-                financial_timeline['revenue'] = {
-                    'dates': revenues.index.strftime('%Y').tolist(),
-                    'values': revenues.tolist()
-                }
+        # --- Primary: Finnhub Standardized Financials (reliable) ---
+        finnhub_url = "https://finnhub.io/api/v1/stock/financials"
+        params = {"symbol": symbol, "statement": "is", "freq": "annual", "token": FINNHUB_API_KEY}  # Income statement annual
+        result = fetch_with_retry(finnhub_url, params=params)
+
+        if result["success"] and result["data"].get("data"):
+            fin_data = result["data"]["data"]  # List of yearly reports (newest first)
+            revenues = []
+            net_incomes = []
+            dates = []
+
+            for year_data in fin_data[:6]:  # Last ~5-6 years
+                report = year_data.get("report", {})
+                date = year_data.get("year") or year_data.get("date", "N/A")
+                if date != "N/A":
+                    dates.append(str(date))
+                    revenues.append(report.get("totalRevenue", 0) or 0)
+                    net_incomes.append(report.get("netIncome", 0) or 0)
+
+            if dates:
+                financial_timeline['revenue'] = {'dates': dates[::-1], 'values': revenues[::-1]}  # Oldest first
+                financial_timeline['net_income'] = {'dates': dates[::-1], 'values': net_incomes[::-1]}
+
+        # --- Fallback: yFinance with fixes if Finnhub incomplete ---
+        if not financial_timeline:
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            ticker = yf.Ticker(symbol)
             
-            # Net Income data
-            if 'Net Income' in financials.index:
-                net_income = financials.loc['Net Income'].dropna()
-                financial_timeline['net_income'] = {
-                    'dates': net_income.index.strftime('%Y').tolist(),
-                    'values': net_income.tolist()
-                }
-            
-            # Gross Profit
-            if 'Gross Profit' in financials.index:
-                gross_profit = financials.loc['Gross Profit'].dropna()
-                financial_timeline['gross_profit'] = {
-                    'dates': gross_profit.index.strftime('%Y').tolist(),
-                    'values': gross_profit.tolist()
-                }
-        
-        # Balance sheet data
-        if not balance_sheet.empty:
-            # Total Assets
-            if 'Total Assets' in balance_sheet.index:
-                assets = balance_sheet.loc['Total Assets'].dropna()
-                financial_timeline['total_assets'] = {
-                    'dates': assets.index.strftime('%Y').tolist(),
-                    'values': assets.tolist()
-                }
-            
-            # Total Debt
-            if 'Total Debt' in balance_sheet.index:
-                debt = balance_sheet.loc['Total Debt'].dropna()
-                financial_timeline['total_debt'] = {
-                    'dates': debt.index.strftime('%Y').tolist(),
-                    'values': debt.tolist()
-                }
-        
-        # Add key ratios over time
-        ratios_timeline = calculate_historical_ratios(financial_timeline)
-        
-        return {
-            "financial_data": financial_timeline,
-            "ratios_timeline": ratios_timeline,
-            "company_info": info,
-            "error": None
-        }
-        
+            # Retry loop with delay
+            for attempt in range(3):
+                try:
+                    financials = ticker.financials
+                    if not financials.empty and 'Total Revenue' in financials.index:
+                        rev = financials.loc['Total Revenue'].dropna()
+                        financial_timeline['revenue'] = {
+                            'dates': rev.index.strftime('%Y').tolist(),
+                            'values': rev.tolist()
+                        }
+                    if not financials.empty and 'Net Income' in financials.index:
+                        ni = financials.loc['Net Income'].dropna()
+                        financial_timeline['net_income'] = {
+                            'dates': ni.index.strftime('%Y').tolist(),
+                            'values': ni.tolist()
+                        }
+                    break  # Success
+                except:
+                    time.sleep(2 ** attempt)  # Exponential backoff
+
+        # Calculate ratios if we have data
+        if financial_timeline:
+            ratios_timeline = calculate_historical_ratios(financial_timeline)
+
     except Exception as e:
-        return {
-            "financial_data": {},
-            "ratios_timeline": {},
-            "company_info": {},
-            "error": str(e)
-        }
+        error = str(e)
+
+    return {
+        "financial_data": financial_timeline,
+        "ratios_timeline": ratios_timeline,
+        "company_info": {},  # Not needed here
+        "error": error
+    }
 
 def calculate_historical_ratios(financial_data):
     """Calculate historical financial ratios for trend analysis"""
